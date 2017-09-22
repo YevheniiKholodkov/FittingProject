@@ -1,0 +1,24 @@
+//{{NO_DEPENDENCIES}}
+// Microsoft Visual C++ generated include file.
+// Used by MULTINLFITDIALOG.RC
+//
+
+#define IDD_MULTINLFITDLG 100
+#define IDC_TAB_PLACEHOLDER 1000
+#define IDD_FUNCTIONTAB 3000
+#define IDD_PARAMETERSTAB 3001
+#define IDD_BOUNDS 3002
+#define IDD_ADDITIONALTAB 3003
+
+
+// Next default values for new objects
+// 
+#ifdef APSTUDIO_INVOKED
+#ifndef APSTUDIO_READONLY_SYMBOLS
+
+#define _APS_NEXT_RESOURCE_VALUE	100
+#define _APS_NEXT_CONTROL_VALUE		6000
+#define _APS_NEXT_SYMED_VALUE		21000
+#define _APS_NEXT_COMMAND_VALUE		32771
+#endif
+#endif

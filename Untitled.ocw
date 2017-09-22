@@ -1,0 +1,53 @@
+[Workspace]
+File1="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\ParametrsTab.cpp"|4
+FileCount=16
+File2="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\BoundsTab.h"|6
+File3="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLFitAdditionalParams.h"|6
+File4="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLSFIniPraser.h"|6
+File5="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\FunctionSelectionTab.cpp"|4
+File6="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\resource.h"|6
+File7="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\FunctionSelection.h"|6
+File8="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\MultiNLFitDialog.h"|6
+File9="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLSFIniPraser.cpp"|4
+File10="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\MultiNLFitDialog.cpp"|4
+File11="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\ParametrsTab.h"|6
+File12="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\AdditionalTab.h"|6
+File13="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLMultiFitSettings.cpp"|4
+File14="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLMultiFitSettings.h"|6
+File15="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\MultiNLFitDialogRes.h"|6
+File16="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLMultiFitter.h"|6
+[WinPos]
+File1="C:\Program Files\OriginLab\Origin2017\OriginC\originlab\ANALYSIS_UTILS.C"|2 24 630 73|6177 0 6191 0 6191|1|
+File2="C:\Program Files\OriginLab\Origin2017\OriginC\OriginLab\PFM_utils.c"|2 24 630 73|4594 22 4608 3 4608|1|
+File3="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLSFIniPraser.h"|2 24 630 73|0 22 14 22 14|1|
+File4="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\ParametrsTab.h"|2 24 630 73|18 32 58 32 58|1|
+File5="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\BoundsTab.h"|2 24 630 73|9 1 19 1 19|1|
+File6="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\FunctionSelection.h"|2 24 630 73|21 0 41 0 41|1|
+File7="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLFitAdditionalParams.h"|2 24 630 73|0 4 48 4 48|1|
+File8="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\MultiNLFitDialogRes.h"|2 24 630 73|0 0 0 0 0|1|
+File9="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLMultiFitter.h"|2 24 630 73|0 0 0 0 0|1|
+File10="C:\Program Files\OriginLab\Origin2017\OriginC\OriginLab\NLFITSESSION.H"|2 24 630 73|8598 0 8609 0 8609|1|
+File11="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\AdditionalTab.h"|2 24 630 73|91 32 109 11 113|1|
+File12="C:\Program Files\OriginLab\Origin2017\OriginC\OriginLab\ParameterTabs.h"|2 24 630 73|8 0 37 0 37|1|
+File13="C:\Program Files\OriginLab\Origin2017\OriginC\OriginLab\NLFitParaControl.h"|2 24 630 73|749 34 770 34 770|1|
+File14="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\MultiNLFitDialog.h"|2 24 630 73|56 25 66 25 66|1|
+File15="C:\Program Files\OriginLab\Origin2017\OriginC\OriginLab\ParameterDlg.h"|2 24 630 73|1143 20 1157 1 1157|1|
+File16="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLMultiFitSettings.h"|2 24 630 73|119 37 128 14 128|1|
+File17="C:\Program Files\OriginLab\Origin2017\OriginC\originlab\GRIDCONTROL.H"|2 24 630 73|433 0 447 0 447|1|
+File18="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLSFIniPraser.cpp"|2 24 630 73|9 5 14 2 34|1|
+File19="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\FunctionSelectionTab.cpp"|2 24 630 73|0 19 1 52 2|1|
+File20="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\NLMultiFitSettings.cpp"|2 24 630 73|151 55 166 55 166|1|
+File21="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\ParametrsTab.cpp"|2 24 630 73|4 0 18 0 18|1|
+File22="C:\Program Files\OriginLab\Origin2017\OriginC\FittingProject\src\MultiNLFitDialog.cpp"|2 24 630 73|152 0 152 0 152|1|
+OpenFileCount=22
+ShowState=1
+[Breakpoints]
+Version=1
+FileCount=4
+File1={<exe>\OriginC\FittingProject\src\MultiNLFitDialog.cpp}{{152,1,""}{0,0,""}{0,0}{0,0,0,"",""}}{{161,1,""}{0,0,""}{0,0}{0,0,0,"",""}}{{180,1,""}{0,0,""}{0,0}{0,0,0,"",""}}
+File2={<exe>\OriginC\FittingProject\src\MultiNLFitDlg.c}{{68,1,""}{0,0,""}{0,0}{0,0,0,"",""}}{{89,1,""}{0,0,""}{0,0}{0,0,0,"",""}}
+File3={<exe>\OriginC\FittingProject\src\MultiNLFitDlg.h}{{31,1,""}{0,0,""}{0,0}{0,0,0,"",""}}
+File4={<exe>\OriginC\FittingProject\src\ParametrsTab.cpp}{{18,1,""}{0,0,""}{0,0}{0,0,0,"",""}}
+[Bookmarks]
+Version=1
+FileCount=0

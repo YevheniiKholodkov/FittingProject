@@ -1,0 +1,10 @@
+[Fit]
+/*if(run.LoadOC(../system/fit_function.c, 16) != 0)
+	type -b "failed to load c file";
+else
+	type -b "c file is loaded successfully";*/
+fit();
+
+[LaunchMe]	
+	dialog.start(NLSFwiz,NLSFwiz);
+	return 0;
