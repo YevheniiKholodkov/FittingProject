@@ -28,6 +28,11 @@ void ParametersList::BeforeEdit(Control flxControl, long nRow, long nCol, BOOL* 
 {
 }
 
+void ParametersList::refresh()
+{
+	FillGrid();
+}
+
 void ParametersList::FillGrid()
 {
 	vector<string> names;
@@ -86,21 +91,34 @@ void ParametersList::SetColHeader()
 
 void ParametersList::AfterEdit(Control flxControl, int nRow, int nCol)
 {
-	if(nCol!=COL_SHARED && nCol!=COL_FIXED)
-		return;
-	
-	bool bCheck=GetCheck(nRow, nCol);
-	if(bCheck)
+	if(nCol == COL_SHARED || nCol == COL_FIXED)
 	{
+		bool bCheck=GetCheck(nRow, nCol);
+		if(bCheck)
+		{
+			if(nCol == COL_SHARED)
+			{
+				SetCheck(nRow, COL_SHARED, true);
+			}
+			if(nCol == COL_FIXED)
+				SetCheck(nRow, COL_FIXED, true);
+		}
 		if(nCol == COL_SHARED)
-			SetCheck(nRow, COL_SHARED, true);
+		{
+			mSettings->setShared(nRow - 1, bCheck);
+			vector<int> indexes;
+			mSettings->getDublicateParamIndexes(indexes, nRow - 1);
+			for(int i = 0; i < indexes.GetSize(); ++i)
+				HideRow(indexes[i] + 1, bCheck);
+		}
 		if(nCol == COL_FIXED)
-			SetCheck(nRow, COL_FIXED, true);
+			mSettings->getParameters()->setFixed(nRow - 1, bCheck);
 	}
-	if(nCol == COL_SHARED)
-		mSettings->getParameters()->setShared(nRow - 1);
-	if(nCol == COL_FIXED)
-		mSettings->getParameters()->setFixed(nRow - 1);
+	else if(nCol == COL_VALUE)
+	{
+		string str = GetCell(nRow, nCol);
+		mSettings->getParameters()->setValue(nRow - 1, GetCell(nRow, nCol));
+	}
 }
 
 

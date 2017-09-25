@@ -58,7 +58,8 @@ BOOL MultiNLFitDlg::OnCancelClosed(Control ctrl)
 
 BOOL MultiNLFitDlg::OnFitButtonClicked(Control ctrl)
 {
-	fit();
+	mSettings->fit();
+	Close();
 	return true;
 }
 

@@ -37,15 +37,15 @@ public:
 struct NLMultiFitParams
 {
 public:
-	NLMultiFitParams() {	}
-	void addParam(NLMultiFitParam& param) 
+	NLMultiFitParams() {	mNumOfParams = 0;}
+	/*void addParam(NLMultiFitParam& param) 
 	{
 		mNames.Add(param.mName);
 		mMeanings.Add(param.mMeaning);
 		mValues.Add(param.mValue);
 		mIsShareds.Add(param.mIsShared);
 		mIsFixeds.Add(param.mIsFixed);
-	}
+	}*/
 	
 	NLMultiFitParam getParam(int index)
 	{
@@ -59,17 +59,50 @@ public:
 	void getShareds(vector<bool>& shareds) { shareds = mIsShareds; }
 	void getFixeds(vector<bool>& fixeds) { fixeds = mIsFixeds; }
 	
-	void setShared(int index, bool shared = true) { mIsShareds[index] = shared; }
-	void setFixed(int index, bool fixed = true) { mIsFixeds[index] = fixed; }
+	bool setShared(int index, bool shared = true) 
+	{
+		if(index >= mIsShareds.GetSize())
+			return false;
+		int i = index >= mNumOfParams ? index % mNumOfParams : index; 
+		mIsShareds[i] = shared;
+		return true;
+	}
 	
-	void appendNames(vector<string>& names) { mNames.Append(names); }
-	void appendMeanings(vector<string>& meanings) { mMeanings.Append(meanings); }
-private:
+	bool setFixed(int index, bool fixed = true)
+	{
+		if(index >= mIsFixeds.GetSize())
+			return false;
+		mIsFixeds[index] = fixed; 
+		return true;
+	}
+	bool setValue(int index, string value) 
+	{
+		if(index >= mValues.GetSize())
+			return false;
+		mValues[index] = value;
+		
+		return true;
+	}
+	
+	/*void appendNames(vector<string>& names) { mNames.Append(names); }
+	void appendMeanings(vector<string>& meanings) { mMeanings.Append(meanings); }*/
+
+	void cleanAll() 
+	{
+		mNames.RemoveAll();
+		mMeanings.RemoveAll();
+		mValues.RemoveAll();
+		mIsShareds.RemoveAll();
+		mIsFixeds.RemoveAll();
+	}
+	
 	vector<string> mNames;
 	vector<string> mMeanings;
 	vector<string> mValues;
 	vector<bool>   mIsShareds;
 	vector<bool>   mIsFixeds;
+	
+	int            mNumOfParams;      // number of parametrs for function( without replicas)
 };
 
 struct AdditionalParameters
@@ -96,6 +129,23 @@ struct GeneralSetttings
 	string         mFunction;
 	unsigned int   mReplicas;
 };
+
+struct FunctionSettings
+{
+	FunctionSettings() 
+	{
+		mDublicateOffset = 0;
+		mDublicateUnit = 0;
+		mNumberOfParams = 0;
+		mIsReplicaAllowed = false;
+	}
+	vector<string> mFuncNames;
+	vector<string> mMeanings;
+	int mDublicateOffset;
+	int mDublicateUnit;
+	int mNumberOfParams;
+	bool mIsReplicaAllowed;
+};
 				
 class NLMultiFitSettings
 {
@@ -104,7 +154,6 @@ public:
 //	NLMultiFitSettings(const NLMultiFitSettings& settings);
 	
 	bool fit();
-	void updateSession();
 	
 	/*general setting methods*/
 	string getFunction();
@@ -116,11 +165,14 @@ public:
 	
 	/*parameters methods*/
 	NLMultiFitParam  getParam(int index) { return mParametrs.getParam(index);  }
-	void  addParam(NLMultiFitParam& param)
+	/*void  addParam(NLMultiFitParam& param)
 	{
 		mParametrs.addParam(param); 
-	}
+	}*/
 	NLMultiFitParams* getParameters() { return &mParametrs; } 
+	
+	bool getDublicateParamIndexes(vector<int>& indexes, int paramIndex);
+	bool setShared(int index, bool shared = true);
 	
 	/*Additional settings methods*/
 	void checkAddParam(unsigned int paramIndex, bool check);
@@ -137,10 +189,14 @@ public:
 	
 private:
 	void loadFunctionParameters();
+	void updateSession();
+	void setParametrsNamesAndValues();	
+	bool appendFitResults(Worksheet& wks, const FitParameter* pParams, int numOfParams, const RegStats& fitStats, const NLSFFitInfo& fitInfo, string statWithError);
 private:
 	AdditionalParameters mAdditionalParameters;
 	GeneralSetttings     mGeneralSettings;
 	NLMultiFitParams     mParametrs;
+	FunctionSettings     mFunctionSettings;
 	
 	bool           mSaveSettings;
 	

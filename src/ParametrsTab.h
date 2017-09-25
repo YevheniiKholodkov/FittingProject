@@ -16,6 +16,7 @@ public:
 	ParametersList();
 	
 	void Init(int nID, PropertyPage& page,LPCSTR lpcszDlgName, NLMultiFitSettings* settings);
+	void refresh();
 	
 	void BeforeEdit(Control flxControl, long nRow, long nCol, BOOL* pCancel);
 	void AfterEdit(Control flxControl, int nRow, int nCol);
@@ -44,8 +45,8 @@ public:
 	EVENTS_BEGIN
 		PAGE_ON_INIT(OnInitPage)
 		PAGE_ON_ACTIVE(OnActivatePage)
-		ON_GRID_BEFORE_EDIT(IDC_ADDITIONALTAB, OnBeforeEditColList)
-        ON_GRID_AFTER_EDIT(IDC_ADDITIONALTAB, OnAfterEditColList)
+		ON_GRID_BEFORE_EDIT(IDC_GRIDPARAMETRS, OnBeforeEditColList)
+        ON_GRID_AFTER_EDIT(IDC_GRIDPARAMETRS, OnAfterEditColList)
 	//	ON_BN_CLICKED(IDC_FITBUTTON, OnFitButtonClicked);
 	EVENTS_END
 	
