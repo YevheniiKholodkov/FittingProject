@@ -252,7 +252,16 @@ void MultiNLFitDlg::appendFitResults(Worksheet& wks, const vector<string>& vsPar
 
 bool DoMultiNLFitDlg() 
 {
-	MultiNLFitDlg myDlg;
-	myDlg.DoModal( GetWindow() );
+	Worksheet wks = Project.ActiveLayer();
+	if(!wks)
+	{
+		MessageBox(GetWindow(), "There are no active worksheet", "Error", MB_OK);
+	    return false;
+	}
+	else
+	{
+		MultiNLFitDlg myDlg;
+		myDlg.DoModal( GetWindow() );
+	}
 	return true;
 }

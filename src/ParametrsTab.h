@@ -20,6 +20,7 @@ public:
 	
 	void BeforeEdit(Control flxControl, long nRow, long nCol, BOOL* pCancel);
 	void AfterEdit(Control flxControl, int nRow, int nCol);
+	void OnCellChecked(Control flxControl);
 	
 	void FillGrid();
 	void SetColHeader();
@@ -47,6 +48,7 @@ public:
 		PAGE_ON_ACTIVE(OnActivatePage)
 		ON_GRID_BEFORE_EDIT(IDC_GRIDPARAMETRS, OnBeforeEditColList)
         ON_GRID_AFTER_EDIT(IDC_GRIDPARAMETRS, OnAfterEditColList)
+		ON_GRID_SEL_CHANGE(IDC_GRIDPARAMETRS, OnCellChecked)
 	//	ON_BN_CLICKED(IDC_FITBUTTON, OnFitButtonClicked);
 	EVENTS_END
 	
@@ -54,6 +56,7 @@ public:
 	BOOL OnActivatePage();
     void OnBeforeEditColList(Control flxControl, long nRow, long nCol, BOOL* pCancel);
 	void OnAfterEditColList(Control flxControl,int nRow,int nCol);
+	void OnCellChecked(Control flxControl);
 	    
 private:
 	NLMultiFitSettings* mSettings;

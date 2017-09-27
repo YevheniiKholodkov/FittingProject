@@ -67,7 +67,15 @@ BOOL FunctionSelectionTab::OnInitPage()
 		{
 			mFunctionComboBox.Text = mSettings->getFunction();
 		}
-		mReplicasComboBox.Text = mSettings->getReplicas();
+		if(!mSettings->isReplicaAllowed())
+		{
+			mReplicasComboBox.Text = 0;
+			mReplicasComboBox.Enable = false;
+		}
+		else
+		{
+			mReplicasComboBox.Text = mSettings->getReplicas();
+		}
 	}
 	else
 	{
@@ -82,6 +90,7 @@ BOOL FunctionSelectionTab::OnCategoryChanged(ComboBox ctrl)
 	fillComboBoxByFunctionsWith(getCategory());
 	if(mSettings)
 		mSettings->setCategory(getCategory());
+	string str = mSettings->getCategory();
 	return TRUE;
 }
 
@@ -89,6 +98,15 @@ BOOL FunctionSelectionTab::OnFunctionChanged(ComboBox ctrl)
 {
 	if(mSettings) 
 		mSettings->setFunction(getFunction());
+	if(!mSettings->isReplicaAllowed())
+	{
+		mReplicasComboBox.Text = 0;
+		mReplicasComboBox.Enable = false;
+	}
+	else if(mReplicasComboBox.Enable == false)
+	{
+		mReplicasComboBox.Enable = true;
+	}
 	return TRUE;
 }
 

@@ -10,17 +10,43 @@ bool isDigit (char c) {
     return false;
 }
 
-void numbersFromStringTo(string str, vector<unsigned int>& indexes)
+void numbersFromStringTo(string str, vector<int>& indexes, char devider)
 {
-	const char* c = str.GetBuffer(64);
-	while(*c){
-		while(*c && !isDigit(*c) && *c!='-') c++;
-		if(!(*c)) break;
-		indexes.Add(atoi(c));
-		while(*c && (isDigit(*c) || *c=='-')) c++;
+	vector<string> str_nums;
+	str.GetTokens(str_nums, devider);
+	for(int i = 0; i < str_nums.GetSize(); ++i)
+	{
+		indexes.Add(atoi(str_nums[i]));
+	}
+}
+void numbersFromStringToBool(string str, vector<bool>& indexes, char devider)
+{
+	vector<string> str_nums;
+	str.GetTokens(str_nums, devider);
+	for(int i = 0; i < str_nums.GetSize(); ++i)
+	{
+		indexes.Add(atoi(str_nums[i]));
 	}
 }
 
+
+void numbersFromStringToDouble(string str, vector<double>& indexes, char devider)
+{
+	vector<string> str_nums;
+	str.GetTokens(str_nums, devider);
+	for(int i = 0; i < str_nums.GetSize(); ++i)
+	{
+		indexes.Add(atof(str_nums[i]));
+	}
+	/*const char* c = str.GetBuffer(256);
+	while(*c){
+		while(*c && !isDigit(*c) && *c!='-' && *c!='.') c++;
+		if(!(*c)) break;
+		printf("%s\n", c);
+		indexes.Add(atof(c));
+		while(*c && (isDigit(*c) || *c=='-' || *c=='.')) c++;
+	}*/
+}
 //////////////////////////////////////////NLMultiFitSettings///////////////////////////////////////////////////////////////
 NLMultiFitSettings::NLMultiFitSettings()
 {
@@ -83,30 +109,68 @@ bool NLMultiFitSettings::loadSettings()
 			}
 			mSaveSettings = true;
 		}
-		if( treeNodeTmp.tagName == "Category")
+		else if( treeNodeTmp.tagName == "Category")
 		{
-			setCategory(treeNodeTmp.Text);
+			mGeneralSettings.mFunctionCategory = treeNodeTmp.Text;
 		}
-		if( treeNodeTmp.tagName == "Function")
+		else if( treeNodeTmp.tagName == "Function")
 		{
-			setFunction(treeNodeTmp.Text);
+			mGeneralSettings.mFunction = treeNodeTmp.Text; 
+			loadFunctionParameters();
 		}
-		if( treeNodeTmp.tagName == "Replicas")
+		else if( treeNodeTmp.tagName == "Replicas")
 		{
-			setReplicas(atoi(treeNodeTmp.Text));
+			mGeneralSettings.mReplicas = atoi(treeNodeTmp.Text);
 		}
-		if( treeNodeTmp.tagName == "checkedParamCount")
+		else if( treeNodeTmp.tagName == "checkedParamCount")
 		{
 			mAdditionalParameters.mCheckedAddParamCount = atoi(treeNodeTmp.Text);
 		}
-		if( treeNodeTmp.tagName == "indexes")
+		else if( treeNodeTmp.tagName == "mAddParamChecked")
 		{
-			vector<unsigned int> paramIndexes;
-			numbersFromStringTo(treeNodeTmp.Text, paramIndexes);
-			for(unsigned int i = 0; i < paramIndexes.GetSize(); ++i)
-			{
-				mAdditionalParameters.mAddParamChecked[paramIndexes[i]] = true;
-			}
+			vector<bool> add_params;
+			numbersFromStringToBool(treeNodeTmp.Text, add_params, ',');
+			mAdditionalParameters.mAddParamChecked = add_params;
+		}
+		else if( treeNodeTmp.tagName == "mUnitNumbers")
+		{
+			treeNodeTmp.Text.GetTokens(mParametrs.mUnitNumbers, ',');
+		}
+		else if( treeNodeTmp.tagName == "mNames")
+		{
+			treeNodeTmp.Text.GetTokens(mParametrs.mNames, ',');
+		}
+		else if( treeNodeTmp.tagName == "mMeanings")
+		{
+			treeNodeTmp.Text.GetTokens(mParametrs.mMeanings, ',');
+		}
+		else if( treeNodeTmp.tagName == "mValues")
+		{
+			treeNodeTmp.Text.GetTokens(mParametrs.mValues, ',');
+		}
+		else if( treeNodeTmp.tagName == "mIsShareds")
+		{
+			numbersFromStringToBool(treeNodeTmp.Text, mParametrs.mIsShareds, ',');
+		}
+		else if( treeNodeTmp.tagName == "mIsFixeds")
+		{
+			numbersFromStringToBool(treeNodeTmp.Text, mParametrs.mIsFixeds, ',');
+		}
+		else if( treeNodeTmp.tagName == "mLowerBounds")
+		{
+			numbersFromStringToDouble(treeNodeTmp.Text, mParametrs.mLowerBounds, ',');
+		}
+		else if( treeNodeTmp.tagName == "mLowerLimitControl")
+		{
+			numbersFromStringTo(treeNodeTmp.Text, mParametrs.mLowerLimitControl, ',');
+		}
+		else if( treeNodeTmp.tagName == "mUpperBounds")
+		{
+			numbersFromStringToDouble(treeNodeTmp.Text, mParametrs.mUpperBounds, ',');
+		}
+		else if( treeNodeTmp.tagName == "mUpperLimitControl")
+		{
+			numbersFromStringTo(treeNodeTmp.Text, mParametrs.mUpperLimitControl, ',');
 		}
 		treeNodeTmp = treeNodeTmp.NextNode;
 	}
@@ -126,31 +190,115 @@ bool NLMultiFitSettings::saveSettings()
 	//TreeNode general, additional, parametrs, bounds;
 	///General
 	//general = treeSettings.AddNode("General", 1);
-	treeSettings.AddTextNode(getCategory(), "Category", 10);
-	treeSettings.AddTextNode(getFunction(), "Function", 11);
+	treeSettings.AddTextNode(getCategory(), "Category", 1);
+	treeSettings.AddTextNode(getFunction(), "Function", 2);
 	string replicas = getReplicas();
-	treeSettings.AddTextNode(replicas, "Replicas", 12);
+	treeSettings.AddTextNode(replicas, "Replicas", 3);
 	
 	//additional
-	//additional = treeSettings.AddNode("Additional", 2);
 	string checkedParamCount = mAdditionalParameters.mCheckedAddParamCount;
-	treeSettings.AddTextNode(checkedParamCount, "checkedParamCount", 20);
-	vector<unsigned int> paramIndexes;
-	getCheckedAddIndexes(paramIndexes);
+	treeSettings.AddTextNode(checkedParamCount, "checkedParamCount", 4);
 	
-	string index;
-	for(int i = 0; i < paramIndexes.GetSize() - 1; ++i)
+	string value;
+	for(int i = 0; i < mAdditionalParameters.mAddParamChecked.GetSize() - 1; ++i)
 	{
-		index += paramIndexes[i];
-		index += ',';
+		value += mAdditionalParameters.mAddParamChecked[i];
+		value += ',';
 	}
-	if(paramIndexes.GetSize() != 0) index += paramIndexes[paramIndexes.GetSize() - 1];
-	treeSettings.AddTextNode(index, "indexes", 21);
+	if(mAdditionalParameters.mAddParamChecked.GetSize() != 0) value += mAdditionalParameters.mAddParamChecked[mAdditionalParameters.mAddParamChecked.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mAddParamChecked", 5);
 	
 	//parametrs
-	//parametrs = treeSettings.AddNode("Parametrs", 3);
-	//additional
-	//bounds = treeSettings.AddNode("Bounds", 4);
+	value.Empty();
+	for(i = 0; i < mParametrs.mUnitNumbers.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mUnitNumbers[i];
+		value += ",";
+	}
+	if(mParametrs.mUnitNumbers.GetSize() != 0) value += mParametrs.mUnitNumbers[ mParametrs.mUnitNumbers.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mUnitNumbers", 6);
+	//////////////////////////////////////////////////////////
+	value.Empty();
+	for(i = 0; i < mParametrs.mNames.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mNames[i];
+		value += ",";
+	}
+	if(mParametrs.mNames.GetSize() != 0) value += mParametrs.mNames[ mParametrs.mNames.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mNames", 7);
+	//////////////////////////////////////////////////////////
+	value.Empty();
+	for(i = 0; i < mParametrs.mMeanings.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mMeanings[i];
+		value += ",";
+	}
+	if(mParametrs.mMeanings.GetSize() != 0) value += mParametrs.mMeanings[ mParametrs.mMeanings.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mMeanings", 8);
+	//////////////////////////////////////////////////////////
+	value.Empty();
+	for(i = 0; i < mParametrs.mValues.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mValues[i];
+		value += ",";
+	}
+	if(mParametrs.mValues.GetSize() != 0) value += mParametrs.mValues[ mParametrs.mValues.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mValues", 9);
+	//////////////////////////////////////////////////////////
+	value.Empty();
+	for(i = 0; i < mParametrs.mIsShareds.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mIsShareds[i];
+		value += ",";
+	}
+	if(mParametrs.mIsShareds.GetSize() != 0) value += mParametrs.mIsShareds[ mParametrs.mIsShareds.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mIsShareds", 10);
+	//////////////////////////////////////////////////////////
+	value.Empty();
+	for(i = 0; i < mParametrs.mIsFixeds.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mIsFixeds[i];
+		value += ",";
+	}
+	if(mParametrs.mIsFixeds.GetSize() != 0) value += mParametrs.mIsFixeds[ mParametrs.mIsFixeds.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mIsFixeds", 11);
+	//////////////////////////////////////////////////////////
+	value.Empty();
+	for(i = 0; i < mParametrs.mLowerBounds.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mLowerBounds[i];
+		value += ",";
+	}
+	if(mParametrs.mLowerBounds.GetSize() != 0) value += mParametrs.mLowerBounds[ mParametrs.mLowerBounds.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mLowerBounds", 12);
+	//////////////////////////////////////////////////////////
+	value.Empty();
+	for(i = 0; i < mParametrs.mLowerLimitControl.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mLowerLimitControl[i];
+		value += ",";
+	}
+	if(mParametrs.mLowerLimitControl.GetSize() != 0) value += mParametrs.mLowerLimitControl[ mParametrs.mLowerLimitControl.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mLowerLimitControl", 13);
+	//////////////////////////////////////////////////////////
+	value.Empty();
+	for(i = 0; i < mParametrs.mUpperBounds.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mUpperBounds[i];
+		value += ",";
+	}
+	if(mParametrs.mUpperBounds.GetSize() != 0) value += mParametrs.mUpperBounds[ mParametrs.mUpperBounds.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mUpperBounds", 14);
+	//////////////////////////////////////////////////////////
+	value.Empty();
+	for(i = 0; i < mParametrs.mUpperLimitControl.GetSize() - 1; ++i)
+	{
+		value += mParametrs.mUpperLimitControl[i];
+		value += ",";
+	}
+	if(mParametrs.mUpperLimitControl.GetSize() != 0) value += mParametrs.mUpperLimitControl[ mParametrs.mUpperLimitControl.GetSize() - 1];
+	treeSettings.AddTextNode(value, "mUpperLimitControl", 15);
+	value.Empty();
 	
 	return treeSettings.Save(SettingFileName);
 }
@@ -159,7 +307,7 @@ void NLMultiFitSettings::loadFunctionParameters()
 {
 	Tree trFDF;
  	string strFDFFile;
- 			if(nlsf_load_FDF_to_tree(trFDF, getFunction(), &mGeneralSettings.mFunctionCategory) <= FDFTYPE_UNKNOWN)
+ 			if(nlsf_load_FDF_to_tree(trFDF, getFunction(), NULL) <= FDFTYPE_UNKNOWN)
  			return;
  			//nlsf_load_FDF_to_tree(trFDF, mFunction, &mFunctionCategory);
  			
@@ -174,31 +322,36 @@ void NLMultiFitSettings::loadFunctionParameters()
 	TreeNode treeNodeTmp = trFDF.FirstNode;
 	while(treeNodeTmp.IsValid())
 	{
-		if(treeNodeTmp.tagName == "GENERALINFORMATION")
+		string tag = treeNodeTmp.tagName;
+		tag.MakeUpper();
+		if(tag == "GENERALINFORMATION")
 		{
 			TreeNode paramsTreeNodeTmp = treeNodeTmp.FirstNode;    	// Start enumerating from the first node
 			while(paramsTreeNodeTmp.IsValid())		// Checks if the tnTmp node is a valid node or not
 			{
-				string str = paramsTreeNodeTmp.tagName;
-				if(paramsTreeNodeTmp.tagName == "NumberOfParameters")
+				tag = paramsTreeNodeTmp.tagName;
+				tag.MakeUpper();
+				if(tag == "NUMBEROFPARAMETERS")
 				{
+					int a = atoi(paramsTreeNodeTmp.Text);
 					mFunctionSettings.mNumberOfParams = atoi(paramsTreeNodeTmp.Text);
 				}
 				paramsTreeNodeTmp = paramsTreeNodeTmp.NextNode;
 			}
 		}
-		if(treeNodeTmp.tagName == "FITTINGPARAMETERS")
+		if(tag == "FITTINGPARAMETERS")
 		{
 			TreeNode paramsTreeNodeTmp = treeNodeTmp.FirstNode;    	// Start enumerating from the first node
 			while(paramsTreeNodeTmp.IsValid())		// Checks if the tnTmp node is a valid node or not
 			{
-				string str = paramsTreeNodeTmp.tagName;
-				if(paramsTreeNodeTmp.tagName == "Names")
+				tag = paramsTreeNodeTmp.tagName;
+				tag.MakeUpper();
+				if(tag == "NAMES")
 				{
 					paramsTreeNodeTmp.Text.GetTokens(names, ','); 
 					mFunctionSettings.mFuncNames.Append(names);
 				}
-				else if(paramsTreeNodeTmp.tagName == "Meanings")
+				else if(tag == "MEANINGS")
 				{
 					paramsTreeNodeTmp.Text.GetTokens(meanings, ','); 
 					mFunctionSettings.mMeanings.Append(meanings);
@@ -211,12 +364,13 @@ void NLMultiFitSettings::loadFunctionParameters()
 			TreeNode paramsTreeNodeTmp = treeNodeTmp.FirstNode;    	// Start enumerating from the first node
 			while(paramsTreeNodeTmp.IsValid())		// Checks if the tnTmp node is a valid node or not
 			{
-				string str = paramsTreeNodeTmp.tagName;
-				if(paramsTreeNodeTmp.tagName == "DuplicateOffset")
+				tag = paramsTreeNodeTmp.tagName;
+				tag.MakeUpper();
+				if(tag == "DUPLICATEOFFSET")
 				{
 					mFunctionSettings.mDublicateOffset = atoi(paramsTreeNodeTmp.Text);
 				}
-				else if(paramsTreeNodeTmp.tagName == "DuplicateUnit")
+				else if(tag == "DUPLICATEUNIT")
 				{
 					mFunctionSettings.mDublicateUnit = atoi(paramsTreeNodeTmp.Text);
 					}
@@ -225,7 +379,13 @@ void NLMultiFitSettings::loadFunctionParameters()
 		}
 		treeNodeTmp = treeNodeTmp.NextNode;
 	}
-	if(mFunctionSettings.mDublicateOffset == mFunctionSettings.mDublicateUnit == 0)
+	if(mFunctionSettings.mDublicateOffset == 0 && mFunctionSettings.mDublicateUnit == 0)
+	{
+		mFunctionSettings.mIsReplicaAllowed = false;
+		setReplicas(0);
+	}
+	else
+		mFunctionSettings.mIsReplicaAllowed = true;
 }
 
 string NLMultiFitSettings::getFunction()
@@ -263,7 +423,8 @@ void NLMultiFitSettings::saveSettings(bool save)
  
 bool NLMultiFitSettings::fit()
 {
-	int numOfAllParams = mParametrs.mNumOfParams * (getReplicas() + 1);
+	int s = getReplicas();
+	int numOfAllParams = mFunctionSettings.mNumberOfParams * (getReplicas() + 1);
 	if(numOfAllParams != mParametrs.mValues.GetSize() + getReplicas())
 	{
 		return error_report("number of parametrs of fit session and settings are different!!!");
@@ -272,7 +433,21 @@ bool NLMultiFitSettings::fit()
     vector vParams(mParametrs.mValues.GetSize());
     for(int ii = 0; ii < mParametrs.mValues.GetSize(); ++ii)
     {
-		vParams[ii] = atof(mParametrs.mValues[ii]);
+		vParams[ii] = atof(mParametrs.mValues[ii]); // params will be set for ech dataset
+		
+		/*set bounds */
+		if(ii < mParametrs.mLowerBounds.GetSize())
+		{
+			printf("lowerBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mLowerBounds[ii]); 
+			printf("mLowerLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mLowerLimitControl[ii]); 
+			mFitSession.SetParamBounds(ii,  mParametrs.mLowerLimitControl[ii], mParametrs.mLowerBounds[ii], true, -1);
+		}
+		if(ii < mParametrs.mUpperBounds.GetSize())
+		{
+			printf("mUpperBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mUpperBounds[ii]); 
+			printf("mUpperLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mUpperLimitControl[ii]); 
+			mFitSession.SetParamBounds(ii,  mParametrs.mUpperLimitControl[ii], mParametrs.mUpperBounds[ii], false, -1);
+		}
     }
     
     
@@ -432,41 +607,92 @@ void NLMultiFitSettings::setParametrsNamesAndValues()
 	mParametrs.mNames.RemoveAll();
 	mParametrs.mValues.RemoveAll();
 	
-	int paramNumWithReplica = mFunctionSettings.mDublicateOffset - 1 + mFunctionSettings.mDublicateUnit * (getReplicas() + 1);
+	int paramNumWithReplica = isReplicaAllowed() ? mFunctionSettings.mDublicateOffset - 1 + mFunctionSettings.mDublicateUnit * (getReplicas() + 1)
+	                                              : mFunctionSettings.mNumberOfParams;
 	mParametrs.mNames.SetSize(paramNumWithReplica);
 	mParametrs.mValues.SetSize(paramNumWithReplica);
-	
+	mParametrs.mUnitNumbers.SetSize(paramNumWithReplica);
+	{
+		int unit = 1, unit_num = mFunctionSettings.mDublicateUnit;
+		for(int i = 0; i < mParametrs.mUnitNumbers.GetSize(); ++i)
+		{
+			if(i < mFunctionSettings.mDublicateOffset - 1 || getReplicas() == 0)
+				mParametrs.mUnitNumbers[i] = 0;
+			else
+			{
+				mParametrs.mUnitNumbers[i] = unit;
+				if(--unit_num == 0)
+				{
+					++unit;
+					unit_num = mFunctionSettings.mDublicateUnit;
+				}
+			}
+		}
+	}
 	for(int i = 0; i < mFunctionSettings.mNumberOfParams; ++i) // set the names and values of params without replicas
 	{
 		mParametrs.mNames[i] = mFunctionSettings.mFuncNames[i];
 		mParametrs.mValues[i] = paramValues[i];
 	}
-	
 	// set names and values for params of replicas
-	int unit = 1;	
-	int nameIndex = mFunctionSettings.mDublicateOffset - 1;
-	//																														                      y,xc,w,A y0 xc0 w0 A0
-	int unitIndex = mFunctionSettings.mNumberOfParams +  mFunctionSettings.mDublicateOffset - 1; // begin index for replica params              0, 1,2,3,4, 5,  6,  7
-	int endUnitIndex = unitIndex + mFunctionSettings.mDublicateUnit - 1; // end index for replica params  y and y0 are the same and they are not inside dublicate unit.5 - begUnitIndex, 7 - endUnitIndex.
-	for(i = mFunctionSettings.mNumberOfParams; i < paramNumWithReplica; ++i)
+	if(isReplicaAllowed())
 	{
-			string paramName;
-			paramName.Format("%s__%d", mFunctionSettings.mFuncNames[nameIndex++], unit);
-			mParametrs.mNames[i] = paramName;
-			string value;
-			value.Format("%f", paramValues[unitIndex]);
-			mParametrs.mValues[i] = value;
-			
-			if(unitIndex++ == endUnitIndex)
-			{
-				nameIndex = mFunctionSettings.mDublicateOffset - 1;
-				++unit;
-				unitIndex = mFunctionSettings.mNumberOfParams * unit + mFunctionSettings.mDublicateOffset - 1;
-				endUnitIndex = unitIndex + mFunctionSettings.mDublicateUnit - 1;
-			}
+		int unit = 1;	
+		int nameIndex = mFunctionSettings.mDublicateOffset - 1;
+		//																														                      y,xc,w,A y0 xc0 w0 A0
+		int unitIndex = mFunctionSettings.mNumberOfParams +  mFunctionSettings.mDublicateOffset - 1; // begin index for replica params              0, 1,2,3,4, 5,  6,  7
+		int endUnitIndex = unitIndex + mFunctionSettings.mDublicateUnit - 1; // end index for replica params  y and y0 are the same and they are not inside dublicate unit.5 - begUnitIndex, 7 - endUnitIndex.
+		for(i = mFunctionSettings.mNumberOfParams; i < paramNumWithReplica; ++i)
+		{
+				string paramName;
+				paramName.Format("%s__%d", mFunctionSettings.mFuncNames[nameIndex++], unit);
+				mParametrs.mNames[i] = paramName;
+				string value;
+				value.Format("%f", paramValues[unitIndex]);
+				mParametrs.mValues[i] = value;
+				
+				if(unitIndex++ == endUnitIndex)
+				{
+					nameIndex = mFunctionSettings.mDublicateOffset - 1;
+					++unit;
+					unitIndex = mFunctionSettings.mNumberOfParams * unit + mFunctionSettings.mDublicateOffset - 1;
+					endUnitIndex = unitIndex + mFunctionSettings.mDublicateUnit - 1;
+				}
+		}
 	}
 	mParametrs.mIsShareds.SetSize(mFunctionSettings.mNumberOfParams);
 	mParametrs.mIsFixeds.SetSize(paramValues.GetSize());
+	
+	vector<bool>   ExclusiveLower;
+	vector<bool>   OnLowerBounds;	
+	vector<bool>   ExclusiveUpper;
+	vector<bool>   OnUpperBounds;
+	mFitSession.GetParamNumericValues(mParametrs.mLowerBounds, PARMAS_SETTING_LOWERBOUNDS);
+	mFitSession.GetParamNumericValues(ExclusiveLower, PARMAS_SETTING_LOWERBOUNDSEXCLUSIVE);
+	mFitSession.GetParamNumericValues(OnLowerBounds, PARMAS_SETTING_LOWERBOUNDSENABLE);	
+	
+	mParametrs.mLowerLimitControl.SetSize(mParametrs.mLowerBounds.GetSize());
+	for(ii =0; ii < mParametrs.mLowerBounds.GetSize(); ++ii)
+	{
+		int control = OnLowerBounds[ii] ? (ExclusiveLower[ii] ? LIMIT_EXCLUSIVELESS : LIMIT_LESS): LIMIT_OFF;
+		mParametrs.mLowerLimitControl[ii] = control;
+		
+		printf("lowerBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mLowerBounds[ii]); 
+		printf("mLowerLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mLowerLimitControl[ii]); 
+	}
+	
+	mFitSession.GetParamNumericValues(mParametrs.mUpperBounds, PARMAS_SETTING_UPPERBOUNDS);
+	mFitSession.GetParamNumericValues(ExclusiveUpper, PARMAS_SETTING_UPPERBOUNDSEXCLUSIVE);
+	mFitSession.GetParamNumericValues(OnUpperBounds, PARMAS_SETTING_UPPERBOUNDSENABLE);	
+	
+	mParametrs.mUpperLimitControl.SetSize(mParametrs.mUpperBounds.GetSize());
+	for(ii =0; ii < mParametrs.mUpperBounds.GetSize(); ++ii)
+	{
+		int control = OnUpperBounds[ii] ? (ExclusiveUpper[ii] ? LIMIT_EXCLUSIVELESS : LIMIT_LESS): LIMIT_OFF;
+		mParametrs.mUpperLimitControl[ii] = control;
+		printf("upperBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mUpperBounds[ii]); 
+		printf("mUpperLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mUpperLimitControl[ii]); 
+	}
 }
 
 bool NLMultiFitSettings::getDublicateParamIndexes(vector<int>& indexes, int paramIndex)
@@ -491,6 +717,25 @@ bool NLMultiFitSettings::setShared(int index, bool shared/* = true*/)
 	mParametrs.mIsShareds[i] = shared;
 	return true;
 }
+
+bool NLMultiFitSettings::setValue(int index, double value)
+{
+	if(index >= mParametrs.mValues.GetSize())
+		return false;
+	int i = index >= mFunctionSettings.mNumberOfParams ? index % mFunctionSettings.mNumberOfParams : index; 
+	mParametrs.mValues[i] = value;
+	return true;
+}
+
+bool NLMultiFitSettings::setFixed(int index, bool fixed)
+{
+	if(index >= mParametrs.mIsFixeds.GetSize())
+		return false;
+	int i = index >= mFunctionSettings.mNumberOfParams ? index % mFunctionSettings.mNumberOfParams : index; 
+	mParametrs.mIsFixeds[i] = fixed;
+	return true;
+}
+
 
 bool NLMultiFitSettings::appendFitResults(Worksheet& wks, const FitParameter* pParams, int numOfParams, const RegStats& fitStats, const NLSFFitInfo& fitInfo, string statWithError)
 {

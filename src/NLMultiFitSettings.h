@@ -3,6 +3,12 @@
 #include <Origin.h>
 #include <..\originlab\NLFitSession.h>
 
+enum LimitControl
+{
+	LIMIT_LESS = 0,
+	LIMIT_EXCLUSIVELESS = 1,
+	LIMIT_OFF = 2
+};
 	
 static const vector<string> AddParamNames = {"MuFinal", "MuMin", "DerivStep", "ParaChange", "Tolerance", "Confidence", "Iterations", "Range1",
 				"Range2", "Step", "Constr", "EffConstr", "N", "DOF", "ReducedChiSq", "SSR", 
@@ -15,94 +21,36 @@ static  vector<string> AddParamComments = {"Final MU value reached", "Smallest M
 				"Correlation between factors", "R Value", "Coefficient of determination (R^2)", 
 				"Adjusted residuel sum of squares", "Root-MSE (SD)", "Norm of Residuals, as the largest singular value of the residuals"};
 
-struct NLMultiFitParam
-{
-public:
-	NLMultiFitParam(string name, string meaning, string value, bool isShared, bool isFixed)
-	{
-		mName = name;
-		mMeaning = meaning;
-		mValue = value;
-		mIsShared = isShared;
-		mIsFixed = isFixed;
-	}
-	
-	string mName;
-	string mMeaning;
-	string mValue;
-	bool  mIsShared;
-	bool  mIsFixed;
-};
-
 struct NLMultiFitParams
 {
 public:
-	NLMultiFitParams() {	mNumOfParams = 0;}
-	/*void addParam(NLMultiFitParam& param) 
-	{
-		mNames.Add(param.mName);
-		mMeanings.Add(param.mMeaning);
-		mValues.Add(param.mValue);
-		mIsShareds.Add(param.mIsShared);
-		mIsFixeds.Add(param.mIsFixed);
-	}*/
-	
-	NLMultiFitParam getParam(int index)
-	{
-		NLMultiFitParam param(mNames[index], mMeanings[index], mValues[index], mIsShareds[index], mIsFixeds[index]);
-		return param;
-	}
-	
-	void getNames(vector<string>& names) { names = mNames; }
-	void getMeanings(vector<string>& meanings) { meanings = mMeanings; }
-	void getValues(vector<string>& values) { values = mValues; }
-	void getShareds(vector<bool>& shareds) { shareds = mIsShareds; }
-	void getFixeds(vector<bool>& fixeds) { fixeds = mIsFixeds; }
-	
-	bool setShared(int index, bool shared = true) 
-	{
-		if(index >= mIsShareds.GetSize())
-			return false;
-		int i = index >= mNumOfParams ? index % mNumOfParams : index; 
-		mIsShareds[i] = shared;
-		return true;
-	}
-	
-	bool setFixed(int index, bool fixed = true)
-	{
-		if(index >= mIsFixeds.GetSize())
-			return false;
-		mIsFixeds[index] = fixed; 
-		return true;
-	}
-	bool setValue(int index, string value) 
-	{
-		if(index >= mValues.GetSize())
-			return false;
-		mValues[index] = value;
-		
-		return true;
-	}
-	
-	/*void appendNames(vector<string>& names) { mNames.Append(names); }
-	void appendMeanings(vector<string>& meanings) { mMeanings.Append(meanings); }*/
+	NLMultiFitParams() {	}
 
 	void cleanAll() 
 	{
+		mUnitNumbers.RemoveAll();
 		mNames.RemoveAll();
 		mMeanings.RemoveAll();
 		mValues.RemoveAll();
 		mIsShareds.RemoveAll();
 		mIsFixeds.RemoveAll();
+		mLowerBounds.RemoveAll();
+		mLowerLimitControl.RemoveAll();
+		mUpperBounds.RemoveAll();
+		mUpperLimitControl.RemoveAll(); 
 	}
 	
+	vector<string> mUnitNumbers;
 	vector<string> mNames;
 	vector<string> mMeanings;
 	vector<string> mValues;
 	vector<bool>   mIsShareds;
 	vector<bool>   mIsFixeds;
 	
-	int            mNumOfParams;      // number of parametrs for function( without replicas)
+	vector 		   mLowerBounds;
+	vector<int>    mLowerLimitControl; //LimitControl
+	vector 		   mUpperBounds;
+	vector<int>    mUpperLimitControl; //LimitControl
 };
 
 struct AdditionalParameters
@@ -163,16 +111,31 @@ public:
 	unsigned int getReplicas();
 	void setReplicas(unsigned int replicas);
 	
-	/*parameters methods*/
-	NLMultiFitParam  getParam(int index) { return mParametrs.getParam(index);  }
-	/*void  addParam(NLMultiFitParam& param)
-	{
-		mParametrs.addParam(param); 
-	}*/
-	NLMultiFitParams* getParameters() { return &mParametrs; } 
+	/*parameters methods*/	
+	void getUnitNumbers(vector<string>& numbers) { numbers = mParametrs.mUnitNumbers; }
+	void getNames(vector<string>& names) { names = mParametrs.mNames; }
+	void getMeanings(vector<string>& meanings) { meanings = mFunctionSettings.mMeanings; }
+	void getValues(vector<string>& values) { values = mParametrs.mValues; }
+	void getShareds(vector<bool>& shareds) { shareds = mParametrs.mIsShareds; }
+	void getFixeds(vector<bool>& fixeds) { fixeds = mParametrs.mIsFixeds; }
+		
+	void getLowerBounds(vector& lowerBound) { lowerBound = mParametrs.mLowerBounds; }
+	void getLowerLimitControls(vector<int>& lowerControls) { lowerControls = mParametrs.mLowerLimitControl; }
+	void getUppperBounds(vector& uppperBounds) { uppperBounds = mParametrs.mUpperBounds; }
+	void getUpperLimitControls(vector<int>& upperControls) { upperControls = mParametrs.mUpperLimitControl; }
+	
+	void setLowerBound(int index, double value) { if(index < mParametrs.mLowerBounds.GetSize()) mParametrs.mLowerBounds[index] = value; }
+	void setLowerLimitControls(int index, int value) { if(index < mParametrs.mLowerLimitControl.GetSize()) mParametrs.mLowerLimitControl[index] = value;}
+	void setUpperBound(int index, double value) { if(index < mParametrs.mUpperBounds.GetSize()) mParametrs.mUpperBounds[index] = value;}
+	void setUpperLimitControls(int index, int value) { if(index < mParametrs.mUpperLimitControl.GetSize()) mParametrs.mUpperLimitControl[index] = value;}
+	
+	bool setValue(int index, double value);
+	bool setFixed(int index, bool fixed);
 	
 	bool getDublicateParamIndexes(vector<int>& indexes, int paramIndex);
 	bool setShared(int index, bool shared = true);
+	
+	bool isReplicaAllowed() { return mFunctionSettings.mIsReplicaAllowed; }
 	
 	/*Additional settings methods*/
 	void checkAddParam(unsigned int paramIndex, bool check);

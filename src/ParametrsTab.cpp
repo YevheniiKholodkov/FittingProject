@@ -2,7 +2,8 @@
 #include <..\FittingProject\src\ParametrsTab.h>
 
 enum {
-	 COL_NAME   = 0,
+	 COL_NO   = 0,
+	 COL_NAME,
 	 COL_MEANING,
 	 COL_SHARED,	
 	 COL_FIXED,
@@ -30,26 +31,30 @@ void ParametersList::BeforeEdit(Control flxControl, long nRow, long nCol, BOOL* 
 
 void ParametersList::refresh()
 {
+	HideCol(COL_SHARED, mSettings->getReplicas() > 0 ? false : true);
 	FillGrid();
 }
 
 void ParametersList::FillGrid()
 {
 	vector<string> names;
-	mSettings->getParameters()->getNames(names);
+	mSettings->getNames(names);
 	if(names.GetSize() == 0)
 		return;
 	SetRows(names.GetSize());
 	
+	vector<string> numbers;
 	vector<string> meanings;
 	vector<string> values;
 	vector<bool> shareds;
 	vector<bool> fixeds;
-	mSettings->getParameters()->getMeanings(meanings);
-	mSettings->getParameters()->getValues(values);
-	mSettings->getParameters()->getShareds(shareds);
-	mSettings->getParameters()->getFixeds(fixeds);
+	mSettings->getUnitNumbers(numbers);
+	mSettings->getMeanings(meanings);
+	mSettings->getValues(values);
+	mSettings->getShareds(shareds);
+	mSettings->getFixeds(fixeds);
 
+	SetCells(numbers, COL_NO);
 	SetCells(names, COL_NAME);
 	SetCells(meanings, COL_MEANING);
 	SetCells(values, COL_VALUE);
@@ -77,18 +82,29 @@ void ParametersList::SetColHeader()
 {
 	SetCols(COL_TOTAL);
 	
+	SetColHeading(COL_NO,"No.");
 	SetColHeading(COL_NAME,"Name");
 	SetColHeading(COL_MEANING,"Meaning");
-	if(mSettings->getReplicas() > 0)
-	{
-		SetColDataType(COL_SHARED,flexDTBoolean);//set the column type to check box
-		SetColHeading(COL_SHARED,"Share");
-	}
+	SetColDataType(COL_SHARED,flexDTBoolean);//set the column type to check box
+	SetColHeading(COL_SHARED,"Share");
 	SetColDataType(COL_FIXED,flexDTBoolean);
 	SetColHeading(COL_FIXED,"Fixed");
 	SetColHeading(COL_VALUE,"Value");
 }
 
+void ParametersList::OnCellChecked(Control flxControl)
+{
+	int nRow, nCol;
+	GetMouseCell(nRow, nCol);
+	if(nCol == COL_NAME || nCol == COL_MEANING )
+	{
+		SetEditable(flexEDNone);
+	}
+	else
+	{
+		SetEditable(flexEDKbdMouse);
+	}
+}
 void ParametersList::AfterEdit(Control flxControl, int nRow, int nCol)
 {
 	if(nCol == COL_SHARED || nCol == COL_FIXED)
@@ -112,12 +128,11 @@ void ParametersList::AfterEdit(Control flxControl, int nRow, int nCol)
 				HideRow(indexes[i] + 1, bCheck);
 		}
 		if(nCol == COL_FIXED)
-			mSettings->getParameters()->setFixed(nRow - 1, bCheck);
+			mSettings->setFixed(nRow - 1, bCheck);
 	}
 	else if(nCol == COL_VALUE)
 	{
-		string str = GetCell(nRow, nCol);
-		mSettings->getParameters()->setValue(nRow - 1, GetCell(nRow, nCol));
+		mSettings->setValue(nRow - 1, atof(GetCell(nRow, nCol)));
 	}
 }
 
@@ -130,6 +145,7 @@ BOOL ParametersTab::OnInitPage()
 
 BOOL ParametersTab::OnActivatePage()
 {
+	m_ColList.refresh();
 	return TRUE;		
 }
 
@@ -142,3 +158,8 @@ void ParametersTab::OnAfterEditColList(Control flxControl,int nRow,int nCol)
 {   
 	m_ColList.AfterEdit(flxControl,nRow,nCol);
 }	
+
+void ParametersTab::OnCellChecked(Control flxControl)
+{
+	m_ColList.OnCellChecked(flxControl);
+}

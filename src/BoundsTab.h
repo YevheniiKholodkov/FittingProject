@@ -1,10 +1,31 @@
 #ifndef BOUNDSTAB
 #define BOUNDSTAB
 #include <Dialog.h>
+#include <..\Originlab\DialogEx.h>
 #include <..\system\MsgMap.h>
 #include "MultiNLFitDialogRes.h"
 #include <..\FittingProject\src\resource.h>
 #include <..\FittingProject\src\NLMultiFitSettings.h>
+
+class BoundsList : public GridListControl
+{
+public:
+	BoundsList();
+	
+	void Init(int nID, PropertyPage& page,LPCSTR lpcszDlgName, NLMultiFitSettings* settings);
+	void refresh();
+	
+	void BeforeEdit(Control flxControl, long nRow, long nCol, BOOL* pCancel);
+	void AfterEdit(Control flxControl, int nRow, int nCol);
+	void OnCellChecked(Control flxControl);
+	
+	void FillGrid();
+	void SetColHeader();
+	
+private:
+	NLMultiFitSettings* mSettings;
+};
+
 
 class BoundsTab : public PropertyPage
 {
@@ -22,18 +43,18 @@ public:
 	EVENTS_BEGIN
 		PAGE_ON_INIT(OnInitPage)
 		PAGE_ON_ACTIVE(OnActivatePage)
+		ON_GRID_BEFORE_EDIT(IDC_GRIDBOUNDS, OnBeforeEditColList)
+        ON_GRID_AFTER_EDIT(IDC_GRIDBOUNDS, OnAfterEditColList)
+		ON_GRID_SEL_CHANGE(IDC_GRIDBOUNDS, OnCellChecked)
 	EVENTS_END
-
-	BOOL OnInitPage()
-	{
-		return TRUE;		
-	}
-
-	BOOL OnActivatePage()
-	{
-		return TRUE;		
-	}
+	
+	BOOL OnInitPage();
+	BOOL OnActivatePage();
+    void OnBeforeEditColList(Control flxControl, long nRow, long nCol, BOOL* pCancel);
+	void OnAfterEditColList(Control flxControl,int nRow,int nCol);
+	void OnCellChecked(Control flxControl);
 private:
 	NLMultiFitSettings* mSettings;
+	BoundsList         m_ColList;
 };
 #endif //BOUNDSTAB
