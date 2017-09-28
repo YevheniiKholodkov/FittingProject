@@ -45,7 +45,7 @@ void ParametersList::FillGrid()
 	
 	vector<string> numbers;
 	vector<string> meanings;
-	vector<string> values;
+	vector<double> values;
 	vector<bool> shareds;
 	vector<bool> fixeds;
 	mSettings->getUnitNumbers(numbers);
@@ -53,11 +53,16 @@ void ParametersList::FillGrid()
 	mSettings->getValues(values);
 	mSettings->getShareds(shareds);
 	mSettings->getFixeds(fixeds);
-
+	
+	vector<string> strValues(values.GetSize());
+	for(int i = 0; i < values.GetSize(); ++i)
+	{
+		strValues[i] = values[i];
+	}
 	SetCells(numbers, COL_NO);
 	SetCells(names, COL_NAME);
 	SetCells(meanings, COL_MEANING);
-	SetCells(values, COL_VALUE);
+	SetCells(strValues, COL_VALUE);
 	
 	vector<string> vsChks;
 	vsChks.SetSize(names.GetSize());
@@ -66,7 +71,7 @@ void ParametersList::FillGrid()
 		SetCells(vsChks, COL_SHARED);
 	}
 	SetCells(vsChks, COL_FIXED);
-	for(int i = 0; i < shareds.GetSize(); ++i)
+	for(i = 0; i < shareds.GetSize(); ++i)
 	{
 		if(mSettings->getReplicas() > 0 && shareds[i])
 		{

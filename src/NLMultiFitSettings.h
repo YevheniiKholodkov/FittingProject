@@ -43,7 +43,7 @@ public:
 	vector<string> mUnitNumbers;
 	vector<string> mNames;
 	vector<string> mMeanings;
-	vector<string> mValues;
+	vector<double> mValues;
 	vector<bool>   mIsShareds;
 	vector<bool>   mIsFixeds;
 	
@@ -72,10 +72,12 @@ struct GeneralSetttings
 	GeneralSetttings() 
 	{
 		mReplicas = 0;
+		mMaxNumberOfIter = 100;
 	}
 	string         mFunctionCategory;
 	string         mFunction;
-	unsigned int   mReplicas;
+	int            mReplicas;
+	int            mMaxNumberOfIter;
 };
 
 struct FunctionSettings
@@ -108,14 +110,16 @@ public:
 	void setFunction(string function);
 	string getCategory();
 	void setCategory(string category);
-	unsigned int getReplicas();
-	void setReplicas(unsigned int replicas);
+	int getReplicas();
+	void setReplicas(int replicas);
+	int getMaxNumOfIter();
+	void setMaxNumOfIter(int iterations);
 	
 	/*parameters methods*/	
 	void getUnitNumbers(vector<string>& numbers) { numbers = mParametrs.mUnitNumbers; }
 	void getNames(vector<string>& names) { names = mParametrs.mNames; }
 	void getMeanings(vector<string>& meanings) { meanings = mFunctionSettings.mMeanings; }
-	void getValues(vector<string>& values) { values = mParametrs.mValues; }
+	void getValues(vector<double>& values) { values = mParametrs.mValues; }
 	void getShareds(vector<bool>& shareds) { shareds = mParametrs.mIsShareds; }
 	void getFixeds(vector<bool>& fixeds) { fixeds = mParametrs.mIsFixeds; }
 		
@@ -150,10 +154,12 @@ public:
 	bool loadSettings();
 	bool saveSettings();
 	
+	void updateSession(); // updates all session parametrs 
 private:
 	void loadFunctionParameters();
-	void updateSession();
-	void setParametrsNamesAndValues();	
+	void updateSessionFunction();
+	void updateSessionParametrs();
+	void setFunctionParametrs();	
 	bool appendFitResults(Worksheet& wks, const FitParameter* pParams, int numOfParams, const RegStats& fitStats, const NLSFFitInfo& fitInfo, string statWithError);
 private:
 	AdditionalParameters mAdditionalParameters;

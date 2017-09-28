@@ -1,10 +1,19 @@
-[Fit]
-/*if(run.LoadOC(../system/fit_function.c, 16) != 0)
-	type -b "failed to load c file";
-else
-	type -b "c file is loaded successfully";*/
-fit();
+[LaunchMe]
+//run.LoadOC(../FittingProject/src/BoundsTab.cpp, 16);
+//run.LoadOC(../FittingProject/src/FunctionSelectionTab.cpp, 16);
+//run.LoadOC(../FittingProject/src/MultiNLFitDialog.cpp, 16);
+//run.LoadOC(../FittingProject/src/NLMultiFitSettings.cpp, 16);
+//run.LoadOC(../FittingProject/src/NLSFIniPraser.cpp, 16);
+//run.LoadOC(../FittingProject/src/ParametrsTab.cpp, 16);
+//run.LoadOC(../FittingProject/src/AdditionalTab.h, 16);
+//run.LoadOC(../FittingProject/src/BoundsTab.h, 16);
+//run.LoadOC(../FittingProject/src/FunctionSelection.h, 16);
+//run.LoadOC(../FittingProject/src/MultiNLFitDialog.h, 16);
+//run.LoadOC(../FittingProject/src/MultiNLFitDialogRes.h, 16);
+//run.LoadOC(../FittingProject/src/NLMultiFitSettings.h, 16);
+//run.LoadOC(../FittingProject/src/NLSFIniPraser.h, 16);
+//run.LoadOC(../FittingProject/src/ParametrsTab.h, 16);
+//run.LoadOC(../FittingProject/src/resource.h, 16);
 
-[LaunchMe]	
-	dialog.start(NLSFwiz,NLSFwiz);
-	return 0;
+DoMultiNLFitDlg();
+return 0;

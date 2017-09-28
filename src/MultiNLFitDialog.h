@@ -100,10 +100,6 @@ protected:
 	Button mSaveCheckBox;
 	MultiNLFitDlgPlaceHolder m_PlaceHolder;
 	NLMultiFitSettings* mSettings;
-private:
-private:
-	bool fit();
-	void appendFitResults(Worksheet& wks, const vector<string>& vsParamNames, const FitParameter* pParams, const RegStats& fitStats, const NLSFFitInfo& fitInfo);
 };
 
 #endif //MULTINLFITDLG

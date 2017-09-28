@@ -21,7 +21,8 @@ public:
 	
 	string getCategory();
 	string getFunction();
-	unsigned int getReplicas();
+	int getReplicas();
+	int getIterations();
 	
 	void setSettings(NLMultiFitSettings*  settings) {  } 
 
@@ -33,6 +34,7 @@ public:
 		ON_CBN_SELCHANGE(IDC_CATEGORYCOMBO, OnCategoryChanged)
 		ON_CBN_SELCHANGE(IDC_FUNCTIONCOMBO2, OnFunctionChanged)
 		ON_CBN_SELCHANGE(IDC_REPLICASCOMBO, OnReplicasChanged)
+		ON_CBN_SELCHANGE(IDC_ITERCOMBO, OnIterationChanged)
 	EVENTS_END
 
 	BOOL OnInitPage();
@@ -45,12 +47,14 @@ public:
 	BOOL OnCategoryChanged(ComboBox ctrl);
 	BOOL OnFunctionChanged(ComboBox ctrl);
 	BOOL OnReplicasChanged(ComboBox ctrl);
+	BOOL OnIterationChanged(ComboBox ctrl);
 private:
 	void fillComboBoxByFunctionsWith(string category);
 private:
 	ComboBox mCategoryComboBox;
 	ComboBox mFunctionComboBox;
 	ComboBox mReplicasComboBox;
+	ComboBox mIterationsComboBox;
 	NLSFIniPraser mIniParser;
 	NLMultiFitSettings* mSettings;
 };

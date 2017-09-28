@@ -122,6 +122,10 @@ bool NLMultiFitSettings::loadSettings()
 		{
 			mGeneralSettings.mReplicas = atoi(treeNodeTmp.Text);
 		}
+		else if( treeNodeTmp.tagName == "Iterations")
+		{
+			mGeneralSettings.mMaxNumberOfIter = atoi(treeNodeTmp.Text);
+		}
 		else if( treeNodeTmp.tagName == "checkedParamCount")
 		{
 			mAdditionalParameters.mCheckedAddParamCount = atoi(treeNodeTmp.Text);
@@ -146,7 +150,7 @@ bool NLMultiFitSettings::loadSettings()
 		}
 		else if( treeNodeTmp.tagName == "mValues")
 		{
-			treeNodeTmp.Text.GetTokens(mParametrs.mValues, ',');
+			numbersFromStringToDouble(treeNodeTmp.Text, mParametrs.mValues, ',');
 		}
 		else if( treeNodeTmp.tagName == "mIsShareds")
 		{
@@ -174,6 +178,7 @@ bool NLMultiFitSettings::loadSettings()
 		}
 		treeNodeTmp = treeNodeTmp.NextNode;
 	}
+	updateSessionFunction();
     return true;
 }
 
@@ -183,7 +188,7 @@ bool NLMultiFitSettings::saveSettings()
 	if(!mSaveSettings)
 	{
 		treeSettings.AddTextNode("false", "save", 0);
-		return false;
+		return treeSettings.Save(SettingFileName);
 	}
 	treeSettings.AddTextNode("true", "save", 0);
 	
@@ -300,6 +305,10 @@ bool NLMultiFitSettings::saveSettings()
 	treeSettings.AddTextNode(value, "mUpperLimitControl", 15);
 	value.Empty();
 	
+	///////////////////////////////////////////////////////////////
+	string iterations = getMaxNumOfIter();
+	treeSettings.AddTextNode(iterations, "Iterations", 16);
+	
 	return treeSettings.Save(SettingFileName);
 }
 
@@ -396,7 +405,6 @@ void NLMultiFitSettings::setFunction(string function)
 { 
 	mGeneralSettings.mFunction = function; 
 	loadFunctionParameters();
-	updateSession();
 }
 string NLMultiFitSettings::getCategory() 
 { 
@@ -406,35 +414,39 @@ void NLMultiFitSettings::setCategory(string category)
 {
 	mGeneralSettings.mFunctionCategory = category;
 }
-unsigned int NLMultiFitSettings::getReplicas()
+int NLMultiFitSettings::getReplicas()
 { 
 	return mGeneralSettings.mReplicas; 
 }
-void NLMultiFitSettings::setReplicas(unsigned int replicas) 
+void NLMultiFitSettings::setReplicas(int replicas) 
 {
 	mGeneralSettings.mReplicas = replicas; 
-	updateSession();
 }
 void NLMultiFitSettings::saveSettings(bool save) 
 {
 	mSaveSettings = save;
- }
+}
  
+int NLMultiFitSettings::getMaxNumOfIter()
+{
+	return mGeneralSettings.mMaxNumberOfIter;
+}
+
+void NLMultiFitSettings::setMaxNumOfIter(int iterations)
+{
+	mGeneralSettings.mMaxNumberOfIter = iterations;
+}
  
 bool NLMultiFitSettings::fit()
 {
-	int s = getReplicas();
 	int numOfAllParams = mFunctionSettings.mNumberOfParams * (getReplicas() + 1);
 	if(numOfAllParams != mParametrs.mValues.GetSize() + getReplicas())
 	{
 		return error_report("number of parametrs of fit session and settings are different!!!");
 	}
     
-    vector vParams(mParametrs.mValues.GetSize());
     for(int ii = 0; ii < mParametrs.mValues.GetSize(); ++ii)
     {
-		vParams[ii] = atof(mParametrs.mValues[ii]); // params will be set for ech dataset
-		
 		/*set bounds */
 		if(ii < mParametrs.mLowerBounds.GetSize())
 		{
@@ -461,8 +473,8 @@ bool NLMultiFitSettings::fit()
 		mFitSession.SetParamShare(index, mParametrs.mIsShareds[index]);
     }
     
+    mFitSession.SetMaxNumIter(mGeneralSettings.mMaxNumberOfIter);
     
-	//const int nMaxNumIterations = 500;
 	Worksheet wks = Project.ActiveLayer();
 	if(!wks)
 	    return error_report("There are no active worksheet");
@@ -505,7 +517,7 @@ bool NLMultiFitSettings::fit()
 			}
 			else
 			{*/
-				int result = mFitSession.SetParamValues(vParams);
+				int result = mFitSession.SetParamValues(mParametrs.mValues);
 				if(result == -2)
 					return error_report("Set params error.  fit function not ready");
 				else if(result == -1)
@@ -519,9 +531,21 @@ bool NLMultiFitSettings::fit()
 					statusWithError = mFitSession.GetFitOutCome(nFitOutcome);
 					printf("fit failed:%s\n", statusWithError);
 				}
+				else
+				{
+					statusWithError = "Success";
+				}
 			//}
 	    }
 	    
+        /*Curve crv(wks, 0, nYCol);
+        
+        double dxc, dWidth, dBaseline, dArea, dHeight, dCentroid;
+        int nErr, nPeakDirection;
+        dxc = peak_pos(crv, &dWidth, &dBaseline, &dArea, &dHeight, &dCentroid, TRUE, TRUE, &nErr, &nPeakDirection);
+        
+        printf("Peak's width is %.4lf, height is %.4lf, baseline is %.4lf, center is %.4lf\n", dWidth, dHeight, dBaseline, dxc);*/
+        
 		// 5. success, get results and put to wksOutput
 		FitParameter	params[100];// whatever the max possible number of parameters in your function
 		RegStats		fitStats;
@@ -539,18 +563,23 @@ bool NLMultiFitSettings::fit()
 
 void NLMultiFitSettings::updateSession()
 {
+	updateSessionFunction();
+	updateSessionParametrs();
+}
+
+void NLMultiFitSettings::updateSessionFunction()
+{
 	if(getFunction().IsEmpty())
 		return;
 	//const int nMaxNumIterations = 500;
 	Worksheet wks = Project.ActiveLayer();
 	if(!wks)
+	{
+		printf("No Active Layer");
 	    return;
-	
-	int             nDataIndex = 0; // only one set in our case
-	DWORD           dwRules = DRR_GET_DEPENDENT | DRR_NO_FACTORS;
+	}
 	
 	// 1. Set fucntion
-	int j = getReplicas();
 	if(!mFitSession.SetFunction(getFunction(), NULL/*getCategory()*/,getReplicas() + 1)) // set function, category name can be ignore
 	{
 		printf("invalid fit function");
@@ -559,6 +588,20 @@ void NLMultiFitSettings::updateSession()
 	
   //  FitSession.SetIterationSettings(nMaxNumIterations);
   
+}
+
+void NLMultiFitSettings::updateSessionParametrs()
+{
+	Worksheet wks = Project.ActiveLayer();
+	if(!wks)
+	{
+		printf("No Active Layer");
+	    return;
+	}
+	
+	
+	int             nDataIndex = 0; // only one set in our case
+	DWORD           dwRules = DRR_GET_DEPENDENT | DRR_NO_FACTORS;
 	int 			nFitOutcome;
 	///////////////////////////////////////////////////////////////////
 	DataRange   drInputData;
@@ -584,10 +627,10 @@ void NLMultiFitSettings::updateSession()
 		printf("err ParamsInitValues");
 	    return ;//error_report("err ParamsInitValues");
 	}
-	setParametrsNamesAndValues();
+	setFunctionParametrs();
 }
 
-void NLMultiFitSettings::setParametrsNamesAndValues()
+void NLMultiFitSettings::setFunctionParametrs()
 {
 	if(mFunctionSettings.mNumberOfParams == 0)
 		return;
@@ -599,19 +642,16 @@ void NLMultiFitSettings::setParametrsNamesAndValues()
 	mFitSession.GetParamValuesAndOffsets(paramValues, paramOffsets);
 	mParametrs.cleanAll();
 	
-	for(int ii =0; ii < paramValues.GetSize(); ++ii)
+	/*for(int ii =0; ii < paramValues.GetSize(); ++ii)
 	{
-		printf("[%d] -> name - , param - %f \n ", ii/*, names[i]*/, paramValues[ii]); 
-	}
-	
-	mParametrs.mNames.RemoveAll();
-	mParametrs.mValues.RemoveAll();
+		printf("[%d] -> name - , param - %f \n ", ii, paramValues[ii]); 
+	}*/
 	
 	int paramNumWithReplica = isReplicaAllowed() ? mFunctionSettings.mDublicateOffset - 1 + mFunctionSettings.mDublicateUnit * (getReplicas() + 1)
 	                                              : mFunctionSettings.mNumberOfParams;
 	mParametrs.mNames.SetSize(paramNumWithReplica);
 	mParametrs.mValues.SetSize(paramNumWithReplica);
-	mParametrs.mUnitNumbers.SetSize(paramNumWithReplica);
+	mParametrs.mUnitNumbers.SetSize(paramNumWithReplica); // set the number of parameters units. For example, y0 - 0, xc -1, w - 1, A - 1, xc__1 - 2, w__1 - 2, A__1 - 2
 	{
 		int unit = 1, unit_num = mFunctionSettings.mDublicateUnit;
 		for(int i = 0; i < mParametrs.mUnitNumbers.GetSize(); ++i)
@@ -647,9 +687,7 @@ void NLMultiFitSettings::setParametrsNamesAndValues()
 				string paramName;
 				paramName.Format("%s__%d", mFunctionSettings.mFuncNames[nameIndex++], unit);
 				mParametrs.mNames[i] = paramName;
-				string value;
-				value.Format("%f", paramValues[unitIndex]);
-				mParametrs.mValues[i] = value;
+				mParametrs.mValues[i] = paramValues[unitIndex];
 				
 				if(unitIndex++ == endUnitIndex)
 				{
@@ -672,13 +710,13 @@ void NLMultiFitSettings::setParametrsNamesAndValues()
 	mFitSession.GetParamNumericValues(OnLowerBounds, PARMAS_SETTING_LOWERBOUNDSENABLE);	
 	
 	mParametrs.mLowerLimitControl.SetSize(mParametrs.mLowerBounds.GetSize());
-	for(ii =0; ii < mParametrs.mLowerBounds.GetSize(); ++ii)
+	for(int ii =0; ii < mParametrs.mLowerBounds.GetSize(); ++ii)
 	{
 		int control = OnLowerBounds[ii] ? (ExclusiveLower[ii] ? LIMIT_EXCLUSIVELESS : LIMIT_LESS): LIMIT_OFF;
 		mParametrs.mLowerLimitControl[ii] = control;
 		
-		printf("lowerBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mLowerBounds[ii]); 
-		printf("mLowerLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mLowerLimitControl[ii]); 
+		/*printf("lowerBounds[%d] ->  %f \n ", ii, mParametrs.mLowerBounds[ii]); 
+		printf("mLowerLimitControl[%d] ->  %d \n ", ii,mParametrs.mLowerLimitControl[ii]); */
 	}
 	
 	mFitSession.GetParamNumericValues(mParametrs.mUpperBounds, PARMAS_SETTING_UPPERBOUNDS);
@@ -690,8 +728,8 @@ void NLMultiFitSettings::setParametrsNamesAndValues()
 	{
 		int control = OnUpperBounds[ii] ? (ExclusiveUpper[ii] ? LIMIT_EXCLUSIVELESS : LIMIT_LESS): LIMIT_OFF;
 		mParametrs.mUpperLimitControl[ii] = control;
-		printf("upperBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mUpperBounds[ii]); 
-		printf("mUpperLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mUpperLimitControl[ii]); 
+		/*printf("upperBounds[%d] ->  %f \n ", ii, mParametrs.mUpperBounds[ii]); 
+		printf("mUpperLimitControl[%d] ->  %d \n ", ii,mParametrs.mUpperLimitControl[ii]); */
 	}
 }
 
@@ -739,11 +777,6 @@ bool NLMultiFitSettings::setFixed(int index, bool fixed)
 
 bool NLMultiFitSettings::appendFitResults(Worksheet& wks, const FitParameter* pParams, int numOfParams, const RegStats& fitStats, const NLSFFitInfo& fitInfo, string statWithError)
 {
-	int j = 0;
-	for(; j < 50; j++)
-	{
-		printf("param[%d]:%f\n", j, pParams[j].Value);
-	}
 	/*if(numOfParams != mParametrs.mNames.GetSize())
 		return error_report("err. number of parameters of initialization and results are different.");*/
 	
@@ -753,6 +786,7 @@ bool NLMultiFitSettings::appendFitResults(Worksheet& wks, const FitParameter* pP
 	// check if empty, then setup cols
 	if(nR1 < 0)
 	{
+		int n = getCheckedAddParamCount();
 		int nTotalCols = mParametrs.mNames.GetSize() + getCheckedAddParamCount();
 		if(wks.GetNumCols() < nTotalCols)
 		{
@@ -771,6 +805,7 @@ bool NLMultiFitSettings::appendFitResults(Worksheet& wks, const FitParameter* pP
 				}
 				else
 				{
+					//printf("index - %d = %s\n",paramIndexes[index], AddParamNames[paramIndexes[index]]);
 					column.SetLongName(AddParamNames[paramIndexes[index]]);
 					column.SetComments(AddParamComments[paramIndexes[index]]);
 					++index;

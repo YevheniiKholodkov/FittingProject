@@ -48,7 +48,7 @@ void BoundsList::FillGrid()
 	
 	vector<string> meanings;
 	vector<string> numbers;
-	vector<string> values;
+	vector<double> values;
 	vector 		   lowerBounds;
 	vector<int>    lowerControls;
 	vector 		   upperBounds;
@@ -61,12 +61,14 @@ void BoundsList::FillGrid()
 	mSettings->getUppperBounds(upperBounds);
 	mSettings->getUpperLimitControls(upperControls);
 	
+	vector<string> strValues(values.GetSize());
 	vector<string> lowerSight(values.GetSize());
 	vector<string> upperSight(values.GetSize());
 	vector<string> lowerStrValue(values.GetSize());
 	vector<string> upperStrValue(values.GetSize());
 	for(int i = 0; i < values.GetSize(); ++i)
 	{
+		strValues[i] = values[i];
 		if(i < lowerBounds.GetSize())
 		{
 			lowerStrValue[i] = lowerBounds[i];
@@ -101,7 +103,7 @@ void BoundsList::FillGrid()
 	
 	SetCells(numbers, COL_NO);
 	SetCells(meanings, COL_MEANING);
-	SetCells(values, COL_VALUE);
+	SetCells(strValues, COL_VALUE);
 	SetCells(names, COL_PARAM);
 	SetCells(lowerStrValue, COL_LOWERBOUNDS);
 	SetCells(lowerSight, COL_SIGHT1);
@@ -182,7 +184,11 @@ void BoundsList::OnCellChecked(Control flxControl)
 {
 	int nRow, nCol;
 	GetMouseCell(nRow, nCol);
-	if(nCol == COL_NO || nCol == COL_MEANING ||  nCol == COL_VALUE ||  nCol == COL_PARAM )
+	string sight1 = GetCell(nRow, COL_SIGHT1);
+	string sight2 = GetCell(nRow, COL_SIGHT2);
+	if(nCol == COL_NO || nCol == COL_MEANING ||  nCol == COL_VALUE ||  nCol == COL_PARAM ||
+	  (nCol == COL_LOWERBOUNDS && (sight1 == " " || sight1.IsEmpty())) ||
+	  (nCol == COL_UPPERBOUNDS && (sight2 == " " || sight2.IsEmpty())))
 	{
 		SetEditable(flexEDNone);
 	}
@@ -200,6 +206,7 @@ BOOL BoundsTab::OnInitPage()
 
 BOOL BoundsTab::OnActivatePage()
 {
+	m_ColList.refresh();
 	return TRUE;		
 }
 
