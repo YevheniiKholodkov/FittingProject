@@ -176,6 +176,10 @@ bool NLMultiFitSettings::loadSettings()
 		{
 			numbersFromStringTo(treeNodeTmp.Text, mParametrs.mUpperLimitControl, ',');
 		}
+		else if( treeNodeTmp.tagName == "mValuesNumber")
+		{
+			mParametrs.mValuesNumber = atoi(treeNodeTmp.Text);
+		}
 		treeNodeTmp = treeNodeTmp.NextNode;
 	}
 	updateSessionFunction();
@@ -306,14 +310,24 @@ bool NLMultiFitSettings::saveSettings()
 	value.Empty();
 	
 	///////////////////////////////////////////////////////////////
-	string iterations = getMaxNumOfIter();
-	treeSettings.AddTextNode(iterations, "Iterations", 16);
+	value = getMaxNumOfIter();
+	treeSettings.AddTextNode(value, "Iterations", 16);
+	value = mParametrs.mValuesNumber;
+	treeSettings.AddTextNode(value, "mValuesNumber", 17);
 	
 	return treeSettings.Save(SettingFileName);
 }
 
 void NLMultiFitSettings::loadFunctionParameters()
 {
+	Worksheet wks = Project.ActiveLayer();
+	if(!wks)
+	{
+		printf("No Active Layer");
+	    return;
+	}
+	mParametrs.mDataNumber = wks.GetNumCols();
+	
 	Tree trFDF;
  	string strFDFFile;
  			if(nlsf_load_FDF_to_tree(trFDF, getFunction(), NULL) <= FDFTYPE_UNKNOWN)
@@ -395,6 +409,9 @@ void NLMultiFitSettings::loadFunctionParameters()
 	}
 	else
 		mFunctionSettings.mIsReplicaAllowed = true;
+	
+	mParametrs.mValuesNumber = isReplicaAllowed() ? mFunctionSettings.mDublicateOffset - 1 + mFunctionSettings.mDublicateUnit * (getReplicas() + 1)
+	                                              : mFunctionSettings.mNumberOfParams;
 }
 
 string NLMultiFitSettings::getFunction()
@@ -439,13 +456,13 @@ void NLMultiFitSettings::setMaxNumOfIter(int iterations)
  
 bool NLMultiFitSettings::fit()
 {
-	int numOfAllParams = mFunctionSettings.mNumberOfParams * (getReplicas() + 1);
-	if(numOfAllParams != mParametrs.mValues.GetSize() + getReplicas())
+	/*int numOfAllParams = mFunctionSettings.mNumberOfParams * (getReplicas() + 1);
+	if(numOfAllParams != mParametrs.mValuesNumber + getReplicas())
 	{
 		return error_report("number of parametrs of fit session and settings are different!!!");
-	}
+	}*/
     
-    for(int ii = 0; ii < mParametrs.mValues.GetSize(); ++ii)
+    for(int ii = 0; ii < mParametrs.mValuesNumber; ++ii)
     {
 		/*set bounds */
 		if(ii < mParametrs.mLowerBounds.GetSize())
@@ -517,7 +534,9 @@ bool NLMultiFitSettings::fit()
 			}
 			else
 			{*/
-				int result = mFitSession.SetParamValues(mParametrs.mValues);
+				vector<double> params;
+				getValues(params, nYCol - 1);
+				int result = mFitSession.SetParamValues(params);
 				if(result == -2)
 					return error_report("Set params error.  fit function not ready");
 				else if(result == -1)
@@ -525,6 +544,12 @@ bool NLMultiFitSettings::fit()
 				else if(result == 1)
 					return error_report("Set params error.  too few parameters");
 				
+	// 3. Call parameter init codes to init parameters
+	if(!mFitSession.ParamsInitValues())
+	{
+		printf("err ParamsInitValues");
+	    return false;//error_report("err ParamsInitValues");
+	}
 				// 4. Iterate with default settings
 				if(!mFitSession.Fit(&nFitOutcome))
 				{
@@ -598,34 +623,52 @@ void NLMultiFitSettings::updateSessionParametrs()
 		printf("No Active Layer");
 	    return;
 	}
+	mParametrs.mDataNumber = wks.GetNumCols();
+	mParametrs.mValues.RemoveAll();
 	
-	
+	int o = wks.GetNumCols();
 	int             nDataIndex = 0; // only one set in our case
 	DWORD           dwRules = DRR_GET_DEPENDENT | DRR_NO_FACTORS;
 	int 			nFitOutcome;
 	///////////////////////////////////////////////////////////////////
-	DataRange   drInputData;
-	drInputData.Add(wks, 0, "X");
-	drInputData.Add(wks, 1, "Y");
-	int         nNumData = drInputData.GetNumData(dwRules);
-	ASSERT(1==nNumData);
-	
-	//2 set the dataset
-	vector  vX1, vY1;
-	drInputData.GetData( dwRules, nDataIndex, NULL, NULL, &vY1, &vX1 );    
-    mFitSession.SetSrcDataRange(drInputData); 
-    
-	if(!mFitSession.SetData(vY1, vX1, NULL, nDataIndex, nNumData))  
+	for(int nYCol = 1; nYCol < wks.GetNumCols(); nYCol++)
 	{
-		printf("err setting data");
-	    return ;//error_report("err setting data");
-	}
-	
-	// 3. Call parameter init codes to init parameters
-	if(!mFitSession.ParamsInitValues())
-	{
-		printf("err ParamsInitValues");
-	    return ;//error_report("err ParamsInitValues");
+		DataRange   drInputData;
+		drInputData.Add(wks, 0, "X");
+		drInputData.Add(wks, nYCol, "Y");
+		int         nNumData = drInputData.GetNumData(dwRules);
+		ASSERT(1==nNumData);
+		
+		//2 set the dataset
+		vector  vX1, vY1;
+		drInputData.GetData( dwRules, nDataIndex, NULL, NULL, &vY1, &vX1 );    
+		mFitSession.SetSrcDataRange(drInputData); 
+		
+		if(!mFitSession.SetData(vY1, vX1, NULL, nDataIndex, nNumData))  
+		{
+			printf("err setting data");
+			return ;//error_report("err setting data");
+		}
+		
+		// 3. Call parameter init codes to init parameters
+		if(!mFitSession.ParamsInitValues())
+		{
+			printf("err ParamsInitValues");
+			return ;//error_report("err ParamsInitValues");
+		}
+		vector         paramValues;
+		vector<int>    paramOffsets;
+		mFitSession.GetParamValuesAndOffsets(paramValues, paramOffsets);
+		for(int i = 0; i < mFunctionSettings.mNumberOfParams; ++i) // set the names and values of params without replicas
+			mParametrs.mValues.Add(paramValues[i]);
+		int unit = 0;
+		for(i = mFunctionSettings.mNumberOfParams; i < paramValues.GetSize(); ++i) // set the names and values of params without replicas
+		{
+			if(unit >= mFunctionSettings.mDublicateOffset - 1)
+				mParametrs.mValues.Add(paramValues[i]);
+			if(++unit == mFunctionSettings.mNumberOfParams)
+				unit = 0;
+		}
 	}
 	setFunctionParametrs();
 }
@@ -635,12 +678,17 @@ void NLMultiFitSettings::setFunctionParametrs()
 	if(mFunctionSettings.mNumberOfParams == 0)
 		return;
 	vector<string> paramNames;
-	vector         paramValues;
-	vector<int>    paramOffsets;
 	mParametrs.mIsShareds.SetSize(mFunctionSettings.mNumberOfParams);
 	
-	mFitSession.GetParamValuesAndOffsets(paramValues, paramOffsets);
-	mParametrs.cleanAll();
+	mParametrs.mUnitNumbers.RemoveAll();
+	mParametrs.mNames.RemoveAll();
+	mParametrs.mMeanings.RemoveAll();
+	mParametrs.mIsShareds.RemoveAll();
+	mParametrs.mIsFixeds.RemoveAll();
+	mParametrs.mLowerBounds.RemoveAll();
+	mParametrs.mLowerLimitControl.RemoveAll();
+	mParametrs.mUpperBounds.RemoveAll();
+	mParametrs.mUpperLimitControl.RemoveAll(); 
 	
 	/*for(int ii =0; ii < paramValues.GetSize(); ++ii)
 	{
@@ -650,7 +698,6 @@ void NLMultiFitSettings::setFunctionParametrs()
 	int paramNumWithReplica = isReplicaAllowed() ? mFunctionSettings.mDublicateOffset - 1 + mFunctionSettings.mDublicateUnit * (getReplicas() + 1)
 	                                              : mFunctionSettings.mNumberOfParams;
 	mParametrs.mNames.SetSize(paramNumWithReplica);
-	mParametrs.mValues.SetSize(paramNumWithReplica);
 	mParametrs.mUnitNumbers.SetSize(paramNumWithReplica); // set the number of parameters units. For example, y0 - 0, xc -1, w - 1, A - 1, xc__1 - 2, w__1 - 2, A__1 - 2
 	{
 		int unit = 1, unit_num = mFunctionSettings.mDublicateUnit;
@@ -672,7 +719,6 @@ void NLMultiFitSettings::setFunctionParametrs()
 	for(int i = 0; i < mFunctionSettings.mNumberOfParams; ++i) // set the names and values of params without replicas
 	{
 		mParametrs.mNames[i] = mFunctionSettings.mFuncNames[i];
-		mParametrs.mValues[i] = paramValues[i];
 	}
 	// set names and values for params of replicas
 	if(isReplicaAllowed())
@@ -687,7 +733,6 @@ void NLMultiFitSettings::setFunctionParametrs()
 				string paramName;
 				paramName.Format("%s__%d", mFunctionSettings.mFuncNames[nameIndex++], unit);
 				mParametrs.mNames[i] = paramName;
-				mParametrs.mValues[i] = paramValues[unitIndex];
 				
 				if(unitIndex++ == endUnitIndex)
 				{
@@ -699,7 +744,7 @@ void NLMultiFitSettings::setFunctionParametrs()
 		}
 	}
 	mParametrs.mIsShareds.SetSize(mFunctionSettings.mNumberOfParams);
-	mParametrs.mIsFixeds.SetSize(paramValues.GetSize());
+	mParametrs.mIsFixeds.SetSize(mParametrs.mValuesNumber);
 	
 	vector<bool>   ExclusiveLower;
 	vector<bool>   OnLowerBounds;	
@@ -756,12 +801,12 @@ bool NLMultiFitSettings::setShared(int index, bool shared/* = true*/)
 	return true;
 }
 
-bool NLMultiFitSettings::setValue(int index, double value)
+bool NLMultiFitSettings::setValue(int index, int dataIndex, double value)
 {
-	if(index >= mParametrs.mValues.GetSize())
+	int trueIndex = dataIndex * mParametrs.mValuesNumber + index;
+	if(trueIndex >= mParametrs.mValues.GetSize())
 		return false;
-	int i = index >= mFunctionSettings.mNumberOfParams ? index % mFunctionSettings.mNumberOfParams : index; 
-	mParametrs.mValues[i] = value;
+	mParametrs.mValues[trueIndex] = value;
 	return true;
 }
 

@@ -25,8 +25,10 @@ public:
 	void FillGrid();
 	void SetColHeader();
 	
+	void setCurrentData(int data);
 private:
 	NLMultiFitSettings* mSettings;
+	int mCurrentData;
 };
 
 class ParametersTab : public PropertyPage
@@ -49,6 +51,7 @@ public:
 		ON_GRID_BEFORE_EDIT(IDC_GRIDPARAMETRS, OnBeforeEditColList)
         ON_GRID_AFTER_EDIT(IDC_GRIDPARAMETRS, OnAfterEditColList)
 		ON_GRID_SEL_CHANGE(IDC_GRIDPARAMETRS, OnCellChecked)
+		ON_LBN_SELCHANGE(IDC_DATALIST, OnListDataChecnged)
 	//	ON_BN_CLICKED(IDC_FITBUTTON, OnFitButtonClicked);
 	EVENTS_END
 	
@@ -57,8 +60,10 @@ public:
     void OnBeforeEditColList(Control flxControl, long nRow, long nCol, BOOL* pCancel);
 	void OnAfterEditColList(Control flxControl,int nRow,int nCol);
 	void OnCellChecked(Control flxControl);
+	void OnListDataChecnged(Control flxControl);
 	    
 private:
 	NLMultiFitSettings* mSettings;
-	ParametersList         m_ColList;
+	ParametersList      m_ColList;
+	ListBox             mDataList;
 };

@@ -13,6 +13,7 @@ enum {
 
 ParametersList::ParametersList()  
 {
+	mCurrentData = 0;
 }
 	
 void ParametersList::Init(int nID, PropertyPage& page,LPCSTR lpcszDlgName, NLMultiFitSettings* settings)
@@ -35,6 +36,12 @@ void ParametersList::refresh()
 	FillGrid();
 }
 
+void ParametersList::setCurrentData(int data) 
+{
+	mCurrentData = data; 
+	refresh();
+}
+
 void ParametersList::FillGrid()
 {
 	vector<string> names;
@@ -50,7 +57,7 @@ void ParametersList::FillGrid()
 	vector<bool> fixeds;
 	mSettings->getUnitNumbers(numbers);
 	mSettings->getMeanings(meanings);
-	mSettings->getValues(values);
+	mSettings->getValues(values, mCurrentData);
 	mSettings->getShareds(shareds);
 	mSettings->getFixeds(fixeds);
 	
@@ -75,11 +82,11 @@ void ParametersList::FillGrid()
 	{
 		if(mSettings->getReplicas() > 0 && shareds[i])
 		{
-			SetCheck(i, COL_SHARED, true);
+			SetCheck(i + 1, COL_SHARED, true);
 		}
 		if(fixeds[i])
 		{
-			SetCheck(i, COL_FIXED, true);
+			SetCheck(i + 1, COL_FIXED, true);
 		}
 	}
 }
@@ -137,7 +144,7 @@ void ParametersList::AfterEdit(Control flxControl, int nRow, int nCol)
 	}
 	else if(nCol == COL_VALUE)
 	{
-		mSettings->setValue(nRow - 1, atof(GetCell(nRow, nCol)));
+		mSettings->setValue(nRow - 1, mCurrentData, atof(GetCell(nRow, nCol)));
 	}
 }
 
@@ -145,6 +152,13 @@ void ParametersList::AfterEdit(Control flxControl, int nRow, int nCol)
 BOOL ParametersTab::OnInitPage()
 {
 	m_ColList.Init(IDC_GRIDPARAMETRS, *this, "Parameters", mSettings);
+	
+	mDataList = GetItem(IDC_DATALIST);
+	for(int i = 0; i < mSettings->getDataNumber(); ++i)
+	{
+		string str = i;
+		mDataList.AddString(str);
+	}
 	return TRUE;		
 }
 
@@ -167,4 +181,10 @@ void ParametersTab::OnAfterEditColList(Control flxControl,int nRow,int nCol)
 void ParametersTab::OnCellChecked(Control flxControl)
 {
 	m_ColList.OnCellChecked(flxControl);
+}
+
+void ParametersTab::OnListDataChecnged(Control flxControl)
+{
+	int data = mDataList.GetCurSel();
+	m_ColList.setCurrentData(data);
 }

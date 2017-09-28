@@ -55,7 +55,7 @@ void BoundsList::FillGrid()
 	vector<int>    upperControls;
 	mSettings->getMeanings(meanings);
 	mSettings->getUnitNumbers(numbers);
-	mSettings->getValues(values);
+	mSettings->getValues(values, 0);
 	mSettings->getLowerBounds(lowerBounds);
 	mSettings->getLowerLimitControls(lowerControls);
 	mSettings->getUppperBounds(upperBounds);

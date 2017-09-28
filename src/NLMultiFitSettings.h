@@ -24,20 +24,10 @@ static  vector<string> AddParamComments = {"Final MU value reached", "Smallest M
 struct NLMultiFitParams
 {
 public:
-	NLMultiFitParams() {	}
-
-	void cleanAll() 
+	NLMultiFitParams() 
 	{
-		mUnitNumbers.RemoveAll();
-		mNames.RemoveAll();
-		mMeanings.RemoveAll();
-		mValues.RemoveAll();
-		mIsShareds.RemoveAll();
-		mIsFixeds.RemoveAll();
-		mLowerBounds.RemoveAll();
-		mLowerLimitControl.RemoveAll();
-		mUpperBounds.RemoveAll();
-		mUpperLimitControl.RemoveAll(); 
+	 mValuesNumber = 0;
+	 mDataNumber = 0;
 	}
 	
 	vector<string> mUnitNumbers;
@@ -51,6 +41,9 @@ public:
 	vector<int>    mLowerLimitControl; //LimitControl
 	vector 		   mUpperBounds;
 	vector<int>    mUpperLimitControl; //LimitControl
+	
+	int mValuesNumber;
+	int mDataNumber;
 };
 
 struct AdditionalParameters
@@ -119,7 +112,12 @@ public:
 	void getUnitNumbers(vector<string>& numbers) { numbers = mParametrs.mUnitNumbers; }
 	void getNames(vector<string>& names) { names = mParametrs.mNames; }
 	void getMeanings(vector<string>& meanings) { meanings = mFunctionSettings.mMeanings; }
-	void getValues(vector<double>& values) { values = mParametrs.mValues; }
+	void getValues(vector<double>& values, int dataIndex) 
+	{
+		int begIndex = dataIndex * mParametrs.mValuesNumber;
+		int endIndex = begIndex + mParametrs.mValuesNumber - 1;
+		mParametrs.mValues.GetSubVector(values, begIndex, endIndex); 
+	}
 	void getShareds(vector<bool>& shareds) { shareds = mParametrs.mIsShareds; }
 	void getFixeds(vector<bool>& fixeds) { fixeds = mParametrs.mIsFixeds; }
 		
@@ -128,12 +126,15 @@ public:
 	void getUppperBounds(vector& uppperBounds) { uppperBounds = mParametrs.mUpperBounds; }
 	void getUpperLimitControls(vector<int>& upperControls) { upperControls = mParametrs.mUpperLimitControl; }
 	
+	int getValuesNumber() { return mParametrs.mValuesNumber; }
+	int getDataNumber() { return mParametrs.mDataNumber; }
+	
 	void setLowerBound(int index, double value) { if(index < mParametrs.mLowerBounds.GetSize()) mParametrs.mLowerBounds[index] = value; }
 	void setLowerLimitControls(int index, int value) { if(index < mParametrs.mLowerLimitControl.GetSize()) mParametrs.mLowerLimitControl[index] = value;}
 	void setUpperBound(int index, double value) { if(index < mParametrs.mUpperBounds.GetSize()) mParametrs.mUpperBounds[index] = value;}
 	void setUpperLimitControls(int index, int value) { if(index < mParametrs.mUpperLimitControl.GetSize()) mParametrs.mUpperLimitControl[index] = value;}
 	
-	bool setValue(int index, double value);
+	bool setValue(int index, int dataIndex, double value);
 	bool setFixed(int index, bool fixed);
 	
 	bool getDublicateParamIndexes(vector<int>& indexes, int paramIndex);

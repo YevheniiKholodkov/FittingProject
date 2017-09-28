@@ -4,7 +4,6 @@
 #include <..\system\MsgMap.h>
 #include "MultiNLFitDialogRes.h"
 #include <..\Originlab\DialogEx.h>
-#include <..\FittingProject\src\NLFitAdditionalParams.h>
 #include <..\FittingProject\src\resource.h>
 #include <..\FittingProject\src\NLMultiFitSettings.h>
 
