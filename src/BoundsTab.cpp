@@ -22,7 +22,7 @@ void BoundsList::Init(int nID, PropertyPage& page,LPCSTR lpcszDlgName, NLMultiFi
 {			
 	GridListControl::Init(nID, page);
 	mSettings = settings;
-	
+	ResizeCols(80, 8, 3, 3, flexAutoSizeNoFixed);
 	SetColHeader();		
 	FillGrid();		//Set the column's properties
 		SetSelection( flexSelectionByRow );	

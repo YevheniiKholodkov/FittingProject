@@ -30,20 +30,22 @@ public:
 	 mDataNumber = 0;
 	}
 	
+	/*unique params for data*/
+	vector<double> mValues;
+	vector<bool>   mIsShareds;     // without replicas , because if we share parametr we just need to set it for original parameter 
+	vector<bool>   mIsFixeds;      // fixed parameter should be set for all params(for replica params too)
+	
+	/*common params for all data*/
 	vector<string> mUnitNumbers;
 	vector<string> mNames;
 	vector<string> mMeanings;
-	vector<double> mValues;
-	vector<bool>   mIsShareds;
-	vector<bool>   mIsFixeds;
-	
 	vector 		   mLowerBounds;
 	vector<int>    mLowerLimitControl; //LimitControl
 	vector 		   mUpperBounds;
 	vector<int>    mUpperLimitControl; //LimitControl
 	
-	int mValuesNumber;
-	int mDataNumber;
+	int mValuesNumber;   // the number of values (with replica)
+	int mDataNumber;     // the number of data
 };
 
 struct AdditionalParameters
@@ -93,10 +95,17 @@ struct FunctionSettings
 class NLMultiFitSettings
 {
 public:
-	NLMultiFitSettings();
+	NLMultiFitSettings(Worksheet wks);
 //	NLMultiFitSettings(const NLMultiFitSettings& settings);
-	
+
+	bool beforeFitting(); // set params befor fitting
+	bool fitAll();
+	bool fit(Worksheet& wks, int columnNum, int &nFitOutcome);
+	bool buildPeaks(vector<int> dataIds);
+	bool buildPeak(int dataId);
+
 	bool fit();
+	void buildGraph();
 	
 	/*general setting methods*/
 	string getFunction();
@@ -109,6 +118,10 @@ public:
 	void setMaxNumOfIter(int iterations);
 	
 	/*parameters methods*/	
+	int getParamIndexWithoutReplica(int index)
+	{
+		return index >= mFunctionSettings.mNumberOfParams ? (index % mFunctionSettings.mNumberOfParams + mFunctionSettings.mDublicateOffset - 1) : index; 
+	}
 	void getUnitNumbers(vector<string>& numbers) { numbers = mParametrs.mUnitNumbers; }
 	void getNames(vector<string>& names) { names = mParametrs.mNames; }
 	void getMeanings(vector<string>& meanings) { meanings = mFunctionSettings.mMeanings; }
@@ -118,8 +131,18 @@ public:
 		int endIndex = begIndex + mParametrs.mValuesNumber - 1;
 		mParametrs.mValues.GetSubVector(values, begIndex, endIndex); 
 	}
-	void getShareds(vector<bool>& shareds) { shareds = mParametrs.mIsShareds; }
-	void getFixeds(vector<bool>& fixeds) { fixeds = mParametrs.mIsFixeds; }
+	void getShareds(vector<bool>& shareds, int dataIndex) 
+	{
+		int begIndex = dataIndex * mFunctionSettings.mNumberOfParams;
+		int endIndex = begIndex + mFunctionSettings.mNumberOfParams - 1;
+		mParametrs.mIsShareds.GetSubVector(shareds, begIndex, endIndex); 
+	}
+	void getFixeds(vector<bool>& fixeds, int dataIndex) 
+	{
+		int begIndex = dataIndex * mParametrs.mValuesNumber;
+		int endIndex = begIndex + mParametrs.mValuesNumber - 1;
+		mParametrs.mIsFixeds.GetSubVector(fixeds, begIndex, endIndex); 
+	}
 		
 	void getLowerBounds(vector& lowerBound) { lowerBound = mParametrs.mLowerBounds; }
 	void getLowerLimitControls(vector<int>& lowerControls) { lowerControls = mParametrs.mLowerLimitControl; }
@@ -135,10 +158,10 @@ public:
 	void setUpperLimitControls(int index, int value) { if(index < mParametrs.mUpperLimitControl.GetSize()) mParametrs.mUpperLimitControl[index] = value;}
 	
 	bool setValue(int index, int dataIndex, double value);
-	bool setFixed(int index, bool fixed);
+	bool setFixed(int index, int dataIndex, bool fixed);
+	bool setShared(int index, int dataIndex, bool shared = true);
 	
 	bool getDublicateParamIndexes(vector<int>& indexes, int paramIndex);
-	bool setShared(int index, bool shared = true);
 	
 	bool isReplicaAllowed() { return mFunctionSettings.mIsReplicaAllowed; }
 	
@@ -171,6 +194,7 @@ private:
 	bool           mSaveSettings;
 	
 	NLFitSession    mFitSession;
+	Worksheet mWks;
 };
 
 #endif // NLMULTIFITSETTINGS

@@ -63,7 +63,9 @@ class MultiNLFitDlg : public Dialog
 public:
 	MultiNLFitDlg() : Dialog(IDD_MULTINLFITDLG, "MultiNLFitDialog")
 	{
-		mSettings = new NLMultiFitSettings();
+		mCurrentPeak = 1;
+		Worksheet wks = Project.ActiveLayer();
+		mSettings = new NLMultiFitSettings(wks);
 		mSettings->loadSettings();
 	}
 	
@@ -71,35 +73,68 @@ public:
 	{
 		delete mSettings;
 	}
-
+	BOOL Create(HWND hParent = NULL)
+	{
+		InitMsgMap();// will be called from internal later
+		bool nRet = Dialog::Create(hParent);
+		return nRet;
+	}
+	
 	int DoModal(HWND hParent = NULL)
 	{
 		InitMsgMap();// will be called from internal later
-		int nRet = Dialog::DoModal(hParent);
+		int nRet = Dialog::DoModal(hParent, 0, "Multi NLFit");
 		return nRet;
+	}
+	
+	void test() {
+		mSettings->buildGraph();
 	}
 
 protected:
 ///----------------- Message Map ----------------
 	EVENTS_BEGIN
+		ON_SYSCOMMAND(OnSystemCommand)
 		PAGE_ON_INIT(OnInitDialog)
 		ON_CANCEL(OnClose) 
 		ON_BN_CLICKED(IDC_FITBUTTON, OnFitButtonClicked)
 		ON_BN_CLICKED(IDC_SAVESETTINGSCHECK, OnClickSetSave)
 		ON_BN_CLICKED(IDC_CANCELBUTTON, OnCancelClosed)
+		ON_BN_CLICKED(IDC_BUILDFST_BTN, OnClickBuildFirstGraph)
+		ON_BN_CLICKED(IDC_BUILDNEXT_BTN, OnClickBuildNextGraph)
+		ON_BN_CLICKED(IDC_BUILDN_BTN, OnClickBuildNGraphs)
 	EVENTS_END
 ///----------------------------------------------
+	
+	
+	BOOL OnSystemCommand(int nCmd)
+	{
+		if( SC_MINIMIZE == nCmd)
+		{
+			BOOL bClose = !IsRolledup();
+			Rollup(bClose);
+			return FALSE;
+		}
+		return TRUE;
+	}
 	
 	BOOL OnInitDialog();
 	BOOL OnClose();
 	BOOL OnCancelClosed(Control ctrl);
 	BOOL OnFitButtonClicked(Control ctrl);
 	BOOL OnClickSetSave(Control ctrl);
+	BOOL OnClickBuildFirstGraph(Control ctrl);
+	BOOL OnClickBuildNextGraph(Control ctrl);
+	BOOL OnClickBuildNGraphs(Control ctrl);
 
 
+	Edit   mEditFirst;
+	Edit   mEditLast;
 	Button mSaveCheckBox;
 	MultiNLFitDlgPlaceHolder m_PlaceHolder;
 	NLMultiFitSettings* mSettings;
+	
+	int mCurrentPeak;
 };
 
 #endif //MULTINLFITDLG

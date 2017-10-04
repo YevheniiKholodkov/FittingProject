@@ -58,8 +58,8 @@ void ParametersList::FillGrid()
 	mSettings->getUnitNumbers(numbers);
 	mSettings->getMeanings(meanings);
 	mSettings->getValues(values, mCurrentData);
-	mSettings->getShareds(shareds);
-	mSettings->getFixeds(fixeds);
+	mSettings->getShareds(shareds, mCurrentData);
+	mSettings->getFixeds(fixeds, mCurrentData);
 	
 	vector<string> strValues(values.GetSize());
 	for(int i = 0; i < values.GetSize(); ++i)
@@ -83,7 +83,28 @@ void ParametersList::FillGrid()
 		if(mSettings->getReplicas() > 0 && shareds[i])
 		{
 			SetCheck(i + 1, COL_SHARED, true);
+			vector<int> indexes;
+			mSettings->getDublicateParamIndexes(indexes, i);
+			for(int j = 0; j < indexes.GetSize(); ++j)
+			{
+				HideRow(indexes[j] + 1, true);
+				SetCheck(indexes[j] + 1, COL_SHARED, true);
+			}
 		}
+		else
+		{
+			SetCheck(i + 1, COL_SHARED, false);
+			vector<int> indexes;
+			mSettings->getDublicateParamIndexes(indexes, i);
+			for(int j = 0; j < indexes.GetSize(); ++j)
+			{
+				HideRow(indexes[j] + 1, false);
+				SetCheck(indexes[j] + 1, COL_SHARED, false);
+			}
+		}
+	}
+	for(i = 0; i < fixeds.GetSize(); ++i)
+	{
 		if(fixeds[i])
 		{
 			SetCheck(i + 1, COL_FIXED, true);
@@ -124,23 +145,24 @@ void ParametersList::AfterEdit(Control flxControl, int nRow, int nCol)
 		bool bCheck=GetCheck(nRow, nCol);
 		if(bCheck)
 		{
-			if(nCol == COL_SHARED)
-			{
-				SetCheck(nRow, COL_SHARED, true);
-			}
 			if(nCol == COL_FIXED)
 				SetCheck(nRow, COL_FIXED, true);
 		}
 		if(nCol == COL_SHARED)
 		{
-			mSettings->setShared(nRow - 1, bCheck);
+			int d = mSettings->getParamIndexWithoutReplica(nRow - 1) + 1;
+			SetCheck(mSettings->getParamIndexWithoutReplica(nRow - 1) + 1, COL_SHARED, bCheck);
+			mSettings->setShared(nRow - 1, mCurrentData, bCheck);
 			vector<int> indexes;
 			mSettings->getDublicateParamIndexes(indexes, nRow - 1);
 			for(int i = 0; i < indexes.GetSize(); ++i)
+			{
 				HideRow(indexes[i] + 1, bCheck);
+				SetCheck(indexes[i] + 1, COL_SHARED, bCheck);
+			}
 		}
 		if(nCol == COL_FIXED)
-			mSettings->setFixed(nRow - 1, bCheck);
+			mSettings->setFixed(nRow - 1, mCurrentData, bCheck);
 	}
 	else if(nCol == COL_VALUE)
 	{

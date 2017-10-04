@@ -13,6 +13,11 @@
 #define IDC_SAVESETTINGSCHECK           6024
 #define IDC_ITERCOMBO                   6027
 #define IDC_DATALIST                    6028
+#define IDC_BUILDFST_BTN                6029
+#define IDC_BUILDN_BTN                  6030
+#define IDC_BUILDNEXT_BTN               6031
+#define IDC_EDITFIRST                   6032
+#define IDC_EDITLAST                    6033
 
 // Next default values for new objects
 // 
@@ -20,7 +25,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        103
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         6029
+#define _APS_NEXT_CONTROL_VALUE         6034
 #define _APS_NEXT_SYMED_VALUE           21000
 #endif
 #endif
