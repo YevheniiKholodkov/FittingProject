@@ -1,6 +1,6 @@
 
 #include <Origin.h>
-#include <..\FittingProject\src\NLSFIniPraser.h>
+#include "NLSFIniPraser.h"
 
 
 bool NLSFIniPraser::readIni(string pathToIni)
@@ -16,7 +16,8 @@ bool NLSFIniPraser::getCategories(vector<string> &categories)
 	TreeNode treeNodeTmp = mTreeIni.FirstNode;
 	while(treeNodeTmp.IsValid())
 	{
-		treeNodeTmp = mTreeIni.FirstNode.NextNode;
+		treeNodeTmp = mTreeIni.FirstNode.NextNode; 
+		string str = treeNodeTmp.tagName;;
 		if(treeNodeTmp.tagName == "Category")
 		{
 			treeNodeTmp = treeNodeTmp.FirstNode;    	// Start enumerating from the first node
@@ -24,7 +25,8 @@ bool NLSFIniPraser::getCategories(vector<string> &categories)
 			{
 				if(treeNodeTmp.Text == "FitFunc" || treeNodeTmp.Text == "fitFunc" || treeNodeTmp.Text == "fitfunc" )
 				{
-					out_str("Tag name = " + treeNodeTmp.tagName + ", value = " + treeNodeTmp.Text);
+					//out_str("Tag name = " + treeNodeTmp.tagName + ", value = " + treeNodeTmp.Text);
+					string name = treeNodeTmp.tagName;
 					categories.Add(treeNodeTmp.tagName);
 				}
 				treeNodeTmp = treeNodeTmp.NextNode; // Forward visiting
@@ -46,7 +48,7 @@ bool NLSFIniPraser::getFunctions(string category, vector<string>& functions)
 			treeNodeTmp = treeNodeTmp.FirstNode;    	// Start enumerating from the first node
 			while(treeNodeTmp.IsValid())		// Checks if the tnTmp node is a valid node or not
 			{
-				out_str("Tag name = " + treeNodeTmp.tagName + ", value = " + treeNodeTmp.Text);
+				//out_str("Tag name = " + treeNodeTmp.tagName + ", value = " + treeNodeTmp.Text);
 				functions.Add(treeNodeTmp.tagName);
 				treeNodeTmp = treeNodeTmp.NextNode; // Forward visiting
 			}

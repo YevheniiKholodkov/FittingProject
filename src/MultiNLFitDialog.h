@@ -12,14 +12,14 @@
 
 #include <Origin.h>
 #include <Dialog.h>
-#include <..\system\MsgMap.h>
+#include <MsgMap.h>
 #include "MultiNLFitDialogRes.h"
-#include <..\FittingProject\src\resource.h>
-#include <..\FittingProject\src\FunctionSelection.h>
-#include <..\FittingProject\src\AdditionalTab.h>
-#include <..\FittingProject\src\ParametrsTab.h>
-#include <..\FittingProject\src\BoundsTab.h>
-#include <..\FittingProject\src\NLMultiFitSettings.h>
+#include "resource.h"
+#include "FunctionSelection.h"
+#include "AdditionalTab.h"
+#include "ParametrsTab.h"
+#include "BoundsTab.h"
+#include "NLMultiFitSettings.h"
 
 class MultiNLFitDlgPlaceHolder : public PropertySheet
 {
@@ -76,7 +76,7 @@ public:
 	BOOL Create(HWND hParent = NULL)
 	{
 		InitMsgMap();// will be called from internal later
-		bool nRet = Dialog::Create(hParent);
+		bool nRet = Dialog::Create(hParent, 0);
 		return nRet;
 	}
 	
@@ -99,29 +99,22 @@ protected:
 		ON_CANCEL(OnClose) 
 		ON_BN_CLICKED(IDC_FITBUTTON, OnFitButtonClicked)
 		ON_BN_CLICKED(IDC_SAVESETTINGSCHECK, OnClickSetSave)
-		ON_BN_CLICKED(IDC_CANCELBUTTON, OnCancelClosed)
+		ON_BN_CLICKED(IDC_CHECKREVERSE, OnClickSetReverse)
 		ON_BN_CLICKED(IDC_BUILDFST_BTN, OnClickBuildFirstGraph)
 		ON_BN_CLICKED(IDC_BUILDNEXT_BTN, OnClickBuildNextGraph)
 		ON_BN_CLICKED(IDC_BUILDN_BTN, OnClickBuildNGraphs)
+		OnActivate(OnActivate)
 	EVENTS_END
 ///----------------------------------------------
 	
 	
-	BOOL OnSystemCommand(int nCmd)
-	{
-		if( SC_MINIMIZE == nCmd)
-		{
-			BOOL bClose = !IsRolledup();
-			Rollup(bClose);
-			return FALSE;
-		}
-		return TRUE;
-	}
+	void	OnActivate(UINT nState, HWND hwndOther, BOOL bMinimized);
+	BOOL OnSystemCommand(int nCmd);
 	
 	BOOL OnInitDialog();
 	BOOL OnClose();
-	BOOL OnCancelClosed(Control ctrl);
 	BOOL OnFitButtonClicked(Control ctrl);
+	BOOL OnClickSetReverse(Control ctrl);
 	BOOL OnClickSetSave(Control ctrl);
 	BOOL OnClickBuildFirstGraph(Control ctrl);
 	BOOL OnClickBuildNextGraph(Control ctrl);
@@ -131,6 +124,7 @@ protected:
 	Edit   mEditFirst;
 	Edit   mEditLast;
 	Button mSaveCheckBox;
+	Button mReverseCheckBox;
 	MultiNLFitDlgPlaceHolder m_PlaceHolder;
 	NLMultiFitSettings* mSettings;
 	

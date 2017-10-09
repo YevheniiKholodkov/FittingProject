@@ -1,6 +1,6 @@
 
 #include <Origin.h>
-#include <..\FittingProject\src\FunctionSelection.h>
+#include "FunctionSelection.h"
 
 
 string FunctionSelectionTab::getCategory()
@@ -42,14 +42,14 @@ BOOL FunctionSelectionTab::OnInitPage()
 	mReplicasComboBox = GetItem(IDC_REPLICASCOMBO);
 	mIterationsComboBox = GetItem(IDC_ITERCOMBO);
 		
-	string pathToIni = nlf_get_ini_filepath(0, true);
+	string pathToIni = GetAppPath() + "NLSF.ini";//nlf_get_ini_filepath(0, true);
 	if(!mIniParser.readIni(pathToIni)) // read NLSF.ini file with categories and functions
 	{
 		out_str("Error. INI file was read!")
 	}
 		
 	vector<string> categories;
-	if(!mIniParser.getCategories(categories)) // get categories
+	if(nlsf_get_category_list(categories) == 0) // get categories
 	{
 		out_str("Error. Categories was not found!");
 	}
@@ -121,7 +121,6 @@ BOOL FunctionSelectionTab::OnFunctionChanged(ComboBox ctrl)
 		return FALSE;
 	
 	mSettings->setFunction(getFunction());
-	mSettings->updateSession();
 	
 	if(!mSettings->isReplicaAllowed())
 	{
@@ -141,14 +140,15 @@ BOOL FunctionSelectionTab::OnReplicasChanged(ComboBox ctrl)
 		return FALSE;
 	
 	mSettings->setReplicas(getReplicas());
-	mSettings->updateSession();
+//	mSettings->updateSession();
 	return TRUE;
 }
 
 void FunctionSelectionTab::fillComboBoxByFunctionsWith(string category)
 {
 	vector<string> functions;
-	if(!mIniParser.getFunctions(category, functions)) // get categories
+	vector<string> files;
+	if(nslf_get_func_list(functions, files, category)) // get categories
 	{
 		out_str("Error. Functions was not found!");
 	}

@@ -4,8 +4,8 @@
 #include <..\system\MsgMap.h>
 #include "MultiNLFitDialogRes.h"
 #include <..\Originlab\DialogEx.h>
-#include <..\FittingProject\src\resource.h>
-#include <..\FittingProject\src\NLMultiFitSettings.h>
+#include "resource.h"
+#include "NLMultiFitSettings.h"
 
 #define STR_DLG_NAME                "AdditionalParams"
 

@@ -1,9 +1,11 @@
 #include <Origin.h>
-#include <..\FittingProject\src\NLMultiFitSettings.h>
-#include <..\system\FDFTree.h>
+#include "NLMultiFitSettings.h"
+#include <FDFTree.h>
 #include <..\OriginLab\nlsf_utils.h>
+//#include <..\OriginLab\PeakFitCurves.h>
+//#include <..\OriginLab\graph_utils.h>
 
-const string SettingFileName = "nlf_setting.xml";
+//const string SettingFileName = "nlf_setting.xml";
 
 bool isDigit (char c) {
     if ((c>='0') && (c<='9')) return true;
@@ -26,6 +28,21 @@ void numbersFromStringToBool(string str, vector<bool>& indexes, char devider)
 	for(int i = 0; i < str_nums.GetSize(); ++i)
 	{
 		indexes.Add(atoi(str_nums[i]));
+	}
+}
+
+void reverseVector(vector& reverseVector)
+{
+	int size = reverseVector.GetSize();	
+	vector newVec(size);
+	for(int i = size - 1 ; i >= 0; --i)
+	{
+		newVec[size - i - 1] = reverseVector[i];
+	}
+	for(i = 0; i < size; ++i)
+	{
+		reverseVector[i] = newVec[i];
+		//printf("reverseVector[%d] ->> %f \n", i, reverseVector[i]);
 	}
 }
 
@@ -52,6 +69,10 @@ NLMultiFitSettings::NLMultiFitSettings(Worksheet wks)
 {
 	mWks = wks;
 	mSaveSettings = false;
+	mNeedParametrsUpdate = false;
+	mNeedNamesUpdate = false;
+	mNeedBoundsUpdate = false;
+	mNeedFunctionUpdate = false;
 }
 /*
 NLMultiFitSettings::NLMultiFitSettings(const NLMultiFitSettings& settings)
@@ -95,7 +116,7 @@ unsigned int NLMultiFitSettings::getCheckedAddParamCount()
 bool NLMultiFitSettings::loadSettings()
 {
 	Tree treeIni;
-    if(!treeIni.Load(SettingFileName))
+    if(!treeIni.Load("nlf_setting.xml"))
     	return false;
     
 	TreeNode treeNodeTmp = treeIni.FirstNode;
@@ -181,6 +202,10 @@ bool NLMultiFitSettings::loadSettings()
 		{
 			mParametrs.mValuesNumber = atoi(treeNodeTmp.Text);
 		}
+		else if( treeNodeTmp.tagName == "mReverse")
+		{
+			mReverse = atoi(treeNodeTmp.Text) == 1;
+		}
 		treeNodeTmp = treeNodeTmp.NextNode;
 	}
 	updateSessionFunction();
@@ -193,7 +218,7 @@ bool NLMultiFitSettings::saveSettings()
 	if(!mSaveSettings)
 	{
 		treeSettings.AddTextNode("false", "save", 0);
-		return treeSettings.Save(SettingFileName);
+		return treeSettings.Save("nlf_setting.xml");
 	}
 	treeSettings.AddTextNode("true", "save", 0);
 	
@@ -315,8 +340,9 @@ bool NLMultiFitSettings::saveSettings()
 	treeSettings.AddTextNode(value, "Iterations", 16);
 	value = mParametrs.mValuesNumber;
 	treeSettings.AddTextNode(value, "mValuesNumber", 17);
+	treeSettings.AddTextNode(mReverse ? "1" : "0", "mReverse", 18);
 	
-	return treeSettings.Save(SettingFileName);
+	return treeSettings.Save("nlf_setting.xml");
 }
 
 void NLMultiFitSettings::loadFunctionParameters()
@@ -371,6 +397,14 @@ void NLMultiFitSettings::loadFunctionParameters()
 				tag.MakeUpper();
 				if(tag == "NAMES")
 				{
+					for(int i = 0; i < mFunctionSettings.mNumberOfParams ; ++i)
+					{
+						if(mFunctionSettings.mFuncNames[i] != names[i])
+						{
+							mNeedNamesUpdate = true;
+							break;
+						}
+					}
 					paramsTreeNodeTmp.Text.GetTokens(names, ','); 
 					mFunctionSettings.mFuncNames.Append(names);
 				}
@@ -420,8 +454,12 @@ string NLMultiFitSettings::getFunction()
 }
 void NLMultiFitSettings::setFunction(string function) 
 { 
-	mGeneralSettings.mFunction = function; 
+	mGeneralSettings.mFunction = function;
+	mNeedFunctionUpdate = true; 
+	mNeedParametrsUpdate = true;
+	mNeedBoundsUpdate = true;
 	loadFunctionParameters();
+	updateSessionFunction();
 }
 string NLMultiFitSettings::getCategory() 
 { 
@@ -437,7 +475,14 @@ int NLMultiFitSettings::getReplicas()
 }
 void NLMultiFitSettings::setReplicas(int replicas) 
 {
+	if(mGeneralSettings.mReplicas != replicas)
+	{
+		mNeedParametrsUpdate = true;
+		mNeedBoundsUpdate = true;
+		mNeedNamesUpdate = true;
+	}
 	mGeneralSettings.mReplicas = replicas; 
+	updateSessionFunction();
 }
 void NLMultiFitSettings::saveSettings(bool save) 
 {
@@ -452,144 +497,6 @@ int NLMultiFitSettings::getMaxNumOfIter()
 void NLMultiFitSettings::setMaxNumOfIter(int iterations)
 {
 	mGeneralSettings.mMaxNumberOfIter = iterations;
-}
- 
-bool NLMultiFitSettings::fit()
-{
-	/*int numOfAllParams = mFunctionSettings.mNumberOfParams * (getReplicas() + 1);
-	if(numOfAllParams != mParametrs.mValuesNumber + getReplicas())
-	{
-		return error_report("number of parametrs of fit session and settings are different!!!");
-	}*/
-    
-    for(int ii = 0; ii < mParametrs.mValuesNumber; ++ii)
-    {
-		/*set bounds */
-		if(ii < mParametrs.mLowerBounds.GetSize())
-		{
-			printf("lowerBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mLowerBounds[ii]); 
-			printf("mLowerLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mLowerLimitControl[ii]); 
-			mFitSession.SetParamBounds(ii,  mParametrs.mLowerLimitControl[ii], mParametrs.mLowerBounds[ii], true, -1);
-		}
-		if(ii < mParametrs.mUpperBounds.GetSize())
-		{
-			printf("mUpperBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mUpperBounds[ii]); 
-			printf("mUpperLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mUpperLimitControl[ii]); 
-			mFitSession.SetParamBounds(ii,  mParametrs.mUpperLimitControl[ii], mParametrs.mUpperBounds[ii], false, -1);
-		}
-    }
-    
-    mFitSession.SetMaxNumIter(mGeneralSettings.mMaxNumberOfIter);
-    
-	if(!mWks)
-	    return error_report("There are no active worksheet");
-	
-	Worksheet wksOutput;
-	wksOutput.Create();
-	
-	int             nDataIndex = 0; // only one set in our case
-	DWORD           dwRules = DRR_GET_DEPENDENT | DRR_NO_FACTORS;
-
-	int    nFitOutcome;
-	string statusWithError;
-	
-	int index = 0;
-	for(int nYCol = 1; nYCol < mWks.GetNumCols(); nYCol++)
-	{
-	    DataRange   drInputData;
-	    drInputData.Add(mWks, 0, "X");
-	    drInputData.Add(mWks, nYCol, "Y");
-	    int         nNumData = drInputData.GetNumData(dwRules);
-	    ASSERT(1==nNumData);
-	    
-	    //2 set the dataset
-	    vector  vX1, vY1;
-	    drInputData.GetData( dwRules, nDataIndex, NULL, NULL, &vY1, &vX1 );    
-        mFitSession.SetSrcDataRange(drInputData); 
-        
-        
-	    if(!mFitSession.SetData(vY1, vX1, NULL, nDataIndex, nNumData))  
-	    {
-	        statusWithError = "err setting data";
-	        printf("fit failed:%s\n", statusWithError);
-	    }
-	    else
-	    {
-			// 3. Call parameter init codes to init parameters
-			/*if(!mFitSession.ParamsInitValues())
-			{
-				statusWithError = "err ParamsInitValues";
-				printf("fit failed:%s\n", statusWithError);
-			}
-			else
-			{*/
-    
-				vector<bool> fixeds;
-				getFixeds(fixeds, nYCol - 1);
-				for(index = 0; index < fixeds.GetSize(); ++index)
-					mFitSession.SetParamFix(index, fixeds[index]);
-				
-				vector<bool> shareds;
-				getShareds(shareds, nYCol - 1);
-				for(index = 0; index < shareds.GetSize(); ++index)
-					mFitSession.SetParamShare(index, shareds[index]);
-    
-				vector<double> params;
-				getValues(params, nYCol - 1);
-				int result = mFitSession.SetParamValues(params);
-				//for(int ii = 0; ii < params.GetSize(); ++ii)
-				//{
-				//	printf("params[%d] ->  %f \n ", ii/*, names[i]*/,params[ii]); 
-				//}
-				if(result == -2)
-					return error_report("Set params error.  fit function not ready");
-				else if(result == -1)
-					return error_report("Set params error.  too many parameters");
-				else if(result == 1)
-					return error_report("Set params error.  too few parameters");
-				
-				mFitSession.GetChiSqr();
-  //  show_params(mFitSession, nNumData);
-	// 3. Call parameter init codes to init parameters
-	/*if(!mFitSession.ParamsInitValues())
-	{
-		printf("err ParamsInitValues");
-	    return false;//error_report("err ParamsInitValues");
-	}*/
-				// 4. Iterate with default settings
-				if(!mFitSession.Fit(&nFitOutcome))
-				{
-					statusWithError = mFitSession.GetFitOutCome(nFitOutcome);
-					printf("fit failed:%s\n", statusWithError);
-				}
-				else
-				{
-					statusWithError = "Success";
-				}
-			//}
-	    }
-	    
-        /*Curve crv(mWks, 0, nYCol);
-        
-        double dxc, dWidth, dBaseline, dArea, dHeight, dCentroid;
-        int nErr, nPeakDirection;
-        dxc = peak_pos(crv, &dWidth, &dBaseline, &dArea, &dHeight, &dCentroid, TRUE, TRUE, &nErr, &nPeakDirection);
-        
-        printf("Peak's width is %.4lf, height is %.4lf, baseline is %.4lf, center is %.4lf\n", dWidth, dHeight, dBaseline, dxc);*/
-        
-		// 5. success, get results and put to wksOutput
-		FitParameter	params[100];// whatever the max possible number of parameters in your function
-		RegStats		fitStats;
-		NLSFFitInfo		fitInfo;
-		mFitSession.GetFitResultsStats(&fitStats, &fitInfo, false, nDataIndex);
-		int paramsNum = mFitSession.GetFitResultsParams(params, &fitStats);
-		if(paramsNum == -1)
-			return error_report("an error occuried while getting the result params");
-		if(!appendFitResults(wksOutput, params, paramsNum, fitStats, fitInfo, statusWithError))
-			return false;
-	}
-	
-	return true;
 }
 
 void append_column_data(Worksheet& wks, vector& vData, LPCSTR lpcstrLongName)
@@ -608,14 +515,14 @@ void NLMultiFitSettings::buildGraph()
 		/*set bounds */
 		if(ii < mParametrs.mLowerBounds.GetSize())
 		{
-			printf("lowerBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mLowerBounds[ii]); 
-			printf("mLowerLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mLowerLimitControl[ii]); 
+			//printf("lowerBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mLowerBounds[ii]); 
+			//printf("mLowerLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mLowerLimitControl[ii]); 
 			mFitSession.SetParamBounds(ii,  mParametrs.mLowerLimitControl[ii], mParametrs.mLowerBounds[ii], true, -1);
 		}
 		if(ii < mParametrs.mUpperBounds.GetSize())
 		{
-			printf("mUpperBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mUpperBounds[ii]); 
-			printf("mUpperLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mUpperLimitControl[ii]); 
+			//printf("mUpperBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mUpperBounds[ii]); 
+			//printf("mUpperLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mUpperLimitControl[ii]); 
 			mFitSession.SetParamBounds(ii,  mParametrs.mUpperLimitControl[ii], mParametrs.mUpperBounds[ii], false, -1);
 		}
     }
@@ -643,8 +550,10 @@ void NLMultiFitSettings::buildGraph()
 	 //2 set the dataset
 	 vector  vX1, vY1;
 	 drInputData.GetData( dwRules, nDataIndex, NULL, NULL, &vY1, &vX1 );    
-     mFitSession.SetSrcDataRange(drInputData); 
+    // mFitSession.SetSrcDataRange(drInputData); 
      
+        if(mReverse)
+        	reverseVector(vY1);
      
 	 if(!mFitSession.SetData(vY1, vX1, NULL, nDataIndex, nNumData))  
 	 {
@@ -684,8 +593,6 @@ void NLMultiFitSettings::buildGraph()
 		}
 	}
 	  
-	
-   
     // Calculate fitting Y   
     vector      vFitY_(vX1.GetSize());
     vector      vFitY0(vX1.GetSize());
@@ -705,36 +612,6 @@ void NLMultiFitSettings::buildGraph()
         out_str("Fail to get Y values");
         return;
     }        
- /*
-    for(int iii = 0; iii < vFitY.GetSize(); ++iii)
-    {
-		printf("vX1[%d] ->  %f \n ", iii, vX1[iii]); 
-		printf("vFitY[%d] ->  %f \n ", iii, vFitY[iii]); 
-    }*/
-    
-    /*Worksheet   wksGraph;
-    wksGraph.Create("Graph");
-    // Put fitting Y data to worksheet column C.
-    XYRange xyFit;
-    xyFit.Add(wksGraph, 0, "X");
-    xyFit.Add(wksGraph, 2, "Y");    *
-    xyFit.SetData(&vFitY, &vX1);
- 
-    // Plot input data and fitting data
-    GraphPage   gp;
-    gp.Create("Graph");
-    GraphLayer gl = gp.Layers(0);
- 
-    int nPlot = gl.AddPlot(wksGraph, IDM_PLOT_LINE); // plot input as line
-    if( nPlot >= 0)
-    {          
-        DataPlot dp = gl.DataPlots(1);
-        if(dp)
-            dp.SetColor(SYSCOLOR_RED); // set fit plot color to read
- 
-        gl.Rescale();
-        legend_update(gl); //refresh graph legend
-    }*/
     
     Worksheet wksGrpah;
     wksGrpah.Create("origin");
@@ -774,14 +651,14 @@ bool NLMultiFitSettings::beforeFitting()
 		/*set bounds */
 		if(ii < mParametrs.mLowerBounds.GetSize())
 		{
-			printf("lowerBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mLowerBounds[ii]); 
-			printf("mLowerLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mLowerLimitControl[ii]); 
+			//printf("lowerBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mLowerBounds[ii]); 
+			//printf("mLowerLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mLowerLimitControl[ii]); 
 			mFitSession.SetParamBounds(ii,  mParametrs.mLowerLimitControl[ii], mParametrs.mLowerBounds[ii], true, -1);
 		}
 		if(ii < mParametrs.mUpperBounds.GetSize())
 		{
-			printf("mUpperBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mUpperBounds[ii]); 
-			printf("mUpperLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mUpperLimitControl[ii]); 
+			//printf("mUpperBounds[%d] ->  %f \n ", ii/*, names[i]*/, mParametrs.mUpperBounds[ii]); 
+			//printf("mUpperLimitControl[%d] ->  %d \n ", ii/*, names[i]*/,mParametrs.mUpperLimitControl[ii]); 
 			mFitSession.SetParamBounds(ii,  mParametrs.mUpperLimitControl[ii], mParametrs.mUpperBounds[ii], false, -1);
 		}
     }
@@ -791,6 +668,11 @@ bool NLMultiFitSettings::beforeFitting()
 
 bool NLMultiFitSettings::fit(Worksheet& wks, int columnNum, int &nFitOutcome)
 {
+	updateSessionFunctionIfNeeded();
+	updateSessionParametrsIfNeeded();
+	updateParameterNamesIfNeeded();
+	updateBoundsIfNeeded();
+	
 	int             nDataIndex = 0; // only one set in our case
 	DWORD           dwRules = DRR_GET_DEPENDENT | DRR_NO_FACTORS;
 
@@ -803,8 +685,9 @@ bool NLMultiFitSettings::fit(Worksheet& wks, int columnNum, int &nFitOutcome)
 	//set the dataset
 	vector  vX1, vY1;
 	drInputData.GetData( dwRules, nDataIndex, NULL, NULL, &vY1, &vX1 );    
-    mFitSession.SetSrcDataRange(drInputData); 
-    
+	
+    if(mReverse)
+    	reverseVector(vY1);
     
 	if(!mFitSession.SetData(vY1, vX1, NULL, nDataIndex, nNumData))  
 	{
@@ -827,10 +710,8 @@ bool NLMultiFitSettings::fit(Worksheet& wks, int columnNum, int &nFitOutcome)
 		getFixeds(fixeds, columnNum - 1);
 		for(int index = 0; index < fixeds.GetSize(); ++index)
 		{
-			printf("fixeds[%d] -> %d, ", index, fixeds[index]);
 			mFitSession.SetParamFix(index, fixeds[index]);
 		}
-			printf("\n");
 		vector<bool> shareds;
 		getShareds(shareds, columnNum - 1);
 		for(index = 0; index < shareds.GetSize(); ++index)
@@ -849,7 +730,6 @@ bool NLMultiFitSettings::fit(Worksheet& wks, int columnNum, int &nFitOutcome)
 bool NLMultiFitSettings::fitAll()
 {
 	beforeFitting();
-	
 	
 	if(!mWks)
 	    return false;
@@ -878,7 +758,7 @@ bool NLMultiFitSettings::fitAll()
 		int paramsNum = mFitSession.GetFitResultsParams(params, &fitStats);
 		if(paramsNum == -1)
 			return error_report("an error occuried while getting the result params");
-		if(!appendFitResults(wksOutput, params, paramsNum, fitStats, fitInfo,  statusWithError))
+		if(!appendFitResults(wksOutput, nYCol, params, paramsNum, fitStats, fitInfo,  statusWithError))
 			return false;
 	}
 	
@@ -899,197 +779,120 @@ bool NLMultiFitSettings::buildPeak(int dataId)
 		return false;
 	}
 	
-	vector  vX1 = mWks.Columns(0);
+	vector  vX = mWks.Columns(0);
      
     // Calculate fitting Y   
-     
-    Worksheet wksGrpah;
-    wksGrpah.Create("origin");
+     // Calculate fitting Y   
+ 
+    // Put fitting Y data to worksheet column C.
+	// Add a new sheet to the workbook
+	string layerName;
+	layerName.Format("graph %d", dataId);
+	int index = mWks.GetPage().AddLayer(layerName); 
+	
+	// Access the new worksheet
+	Worksheet wksGrpah = mWks.GetPage().Layers(index);
+    wksGrpah.DeleteCol(1);
     Dataset ds1(wksGrpah,0);
-    ds1.Append(vX1);
-    for(int i = -1; i <= getReplicas(); ++i)
-    {
-		vector      vFitY(vX1.GetSize());
-		if( 0 == mFitSession.GetYFromX(vX1, vFitY, vFitY.GetSize(), i) )
+    ds1.Append(vX);
+    
+    Tree	trFF;
+	if( !nlsf_load_fdf_tree(trFF, mGeneralSettings.mFunction, mGeneralSettings.mFunctionCategory) )
+	{
+		out_str("Fail to load function file to tree");
+		return false;
+	}
+	
+	NumericFunction	NF;
+	if (!NF.SetTree(trFF))
+	{
+		out_str("NumericFunction object init failed");
+		return false;
+	}
+	
+	FitParameter	params[100];// whatever the max possible number of parameters in your function
+	RegStats		fitStats;
+	int paramsNum = mFitSession.GetFitResultsParams(params, &fitStats);
+	
+	vector 		vOnePeakParams; 
+	vOnePeakParams.SetSize(mFunctionSettings.mNumberOfParams); // Gauss and Lorentz original both have 4 parameters
+	
+	for(int i = 0; i <= getReplicas(); ++i)
+	{
+		for(int paramI = 0; paramI < mFunctionSettings.mNumberOfParams; ++paramI)
 		{
-			out_str("Fail to get Y values");
+			if(paramI < mFunctionSettings.mDublicateOffset - 1)
+				vOnePeakParams[paramI] = params[paramI].Value;
+			else
+			{
+				vOnePeakParams[paramI] = params[paramI + mFunctionSettings.mDublicateUnit * i].Value;
+			}
+		}
+		vector      vFitY(vX.GetSize());
+		
+		bool bb = NF.Evaluate(vOnePeakParams, vFitY, vX, NULL, vX.GetSize());
+		if (!bb)
+		{
+			out_str("Failed!");
 			return false;
-		}   
-		wksGrpah.AddCol();  
-		Dataset ds(wksGrpah,i+2); 
+		}
+		string name;
+		name.Format("Peak %d", i + 1);
+		wksGrpah.AddCol(name);  
+		Dataset ds(wksGrpah,i+1); 
 		ds.Append(vFitY);
-    }  
-    GraphPage gp;
+	}
+	
+	vector      cumulativeFitY(vX.GetSize());
+	mFitSession.GetYFromX(vX, cumulativeFitY, cumulativeFitY.GetSize(), -1);
+	wksGrpah.AddCol("Cumulative Fit Peak");  
+	Dataset cumulativeds(wksGrpah,i+1); 
+	cumulativeds.Append(cumulativeFitY);
+	
+    int nID = 100 + dataId; // Each node must have node ID and node ID must be unique    
+    int nTableFormat = GETNBRANCH_OPEN | GETNBRANCH_HIDE_COL_HEADINGS| GETNBRANCH_HIDE_ROW_HEADINGS | GETNBRANCH_FIT_COL_WIDTH | GETNBRANCH_FIT_ROW_HEIGHT;
+    
+    // 1. Create report tree
+    Tree tr;
+    tr.Report.ID = nID++; 
+    tr.Report.SetAttribute(STR_LABEL_ATTRIB, "Dest Stats Report"); //Table title
+    // TREE_Table attribute is critical in getting the report to work so must be present in every table level. 
+    // Can set this attribute as 0 without any format, but many bits GETNBRANCH_* defined in oc_const.h to set table display format.
+    tr.Report.SetAttribute(TREE_Table, nTableFormat); 
+    
+	GraphPage gp;
     gp.Create("origin");
+    
+    tr.Report.Table1.ID = nID++;    
+    tr.Report.Table1.SetAttribute(STR_LABEL_ATTRIB, "Graph"); //Table tile
+    tr.Report.Table1.SetAttribute(TREE_Table, nTableFormat | GETNBRANCH_TRANSPOSE); 
+    
+    tr.Report.Table1.C1.ID = nID++;
+    tr.Report.Table1.C1.strVal = gp.GetUID(true);
+    string graphName;
+    graphName.Format("Graph %d", dataId);
+    tr.Report.Table1.C1.SetAttribute(STR_LABEL_ATTRIB, graphName);
+    tr.Report.Table1.C1.SetAttribute(TREE_Control, ONODETYPE_EMBED_GRAPH);
     GraphLayer gl(gp.GetName(), 0);
     gl.AddPlot(wksGrpah);
     
     for(int plot = 0; plot < gl.DataPlots.Count(); ++plot)
     {
         DataPlot dp = gl.DataPlots(plot); 
-        dp.SetColor(plot);
+        dp.SetColor(plot + 1);
     }
+    
+    
+    // 6. Do report
+    if( wksGrpah.SetReportTree(tr.Report) < 0 ) // Returns last row number on successful exit and -1 on failure.
+    {
+        printf("Fail to set report tree.\n");
+        return false;
+    }       
+    wksGrpah.AutoSize();
     return true;
 }
 
-//bool NLMultiFitSettings::buildPeak(int dataId)
-//{
-//    // Calculate fitting Y   
-//     
-//    int nID = 100; // Each node must have node ID and node ID must be unique    
-//    int nTableFormat = GETNBRANCH_OPEN | GETNBRANCH_HIDE_COL_HEADINGS| GETNBRANCH_HIDE_ROW_HEADINGS | GETNBRANCH_FIT_COL_WIDTH | GETNBRANCH_FIT_ROW_HEIGHT;
-//    
-//    // 1. Create report tree
-//    Tree tr;
-//    tr.Report.ID = nID++; 
-//    tr.Report.SetAttribute(STR_LABEL_ATTRIB, "Report"); //Table title
-//    // TREE_Table attribute is critical in getting the report to work so must be present in every table level. 
-//    // Can set this attribute as 0 without any format, but many bits GETNBRANCH_* defined in oc_const.h to set table display format.
-//    tr.Report.SetAttribute(TREE_Table, nTableFormat); 
-// 
-//    
-//    // 2. Prepare the 1st table Descriptive Statistics and show values got from one structure
-//    tr.Report.Table1.ID = nID++;
-//    tr.Report.Table1.SetAttribute(STR_LABEL_ATTRIB, "Fit Parameters"); // Table title. If not set this, will show as empty here
-//    tr.Report.Table1.SetAttribute(TREE_Table, nTableFormat); 
-//    
-//    tr.Report.Table1.C1.ID = nID++;
-//    tr.Report.Table1.C1.SetAttribute(STR_LABEL_ATTRIB, "Result");
-//    
-//    tagtTestDescStats stRes; 
-//    stRes.N = 100;
-//    stRes.Mean = 604.72;
-//    stRes.SD = 760.19;
-//    stRes.SEM = 76.02;  
-//    
-//    // Add nodes with values and IDs from structure to tree
-//    tr.Report.Table1.C1 += stRes;
-//    
-//    // !! Please some details of tagtTestDescStats in stats_types.h, already define ID when declaration this structure
-//    // If stRes is a user defined structure without ID, here need to assign node ID for each child nodes of trCol, for example:
-//    //foreach(TreeNode trN in tr.Report.Table1.C1.Children)
-//    //{
-//        //trN.ID = nID++;
-//    //}
-//    
-//    // Set label for each row
-//    tr.Report.Table1.C1.N.SetAttribute(STR_LABEL_ATTRIB, "N total");
-//    tr.Report.Table1.C1.Mean.SetAttribute(STR_LABEL_ATTRIB, "Mean");
-//    tr.Report.Table1.C1.SD.SetAttribute(STR_LABEL_ATTRIB, "Standard Deviation");
-//    tr.Report.Table1.C1.SEM.SetAttribute(STR_LABEL_ATTRIB, "SE of Mean");   
-// 
-//        
-//    ///////////////////////////////////////////////////////////////////////////////////////////////////
-//    
-//    
-//	beforeFitting();
-//	
-//	if(!mWks)
-//	    return false;
-//	int nFitOutcome;
-//	string statusWithError = "Success!";
-//	if(!fit(mWks, dataId, nFitOutcome))
-//	{
-//		statusWithError = mFitSession.GetFitOutCome(nFitOutcome);
-//		printf("fit failed:%s\n", statusWithError);
-//		return false;
-//	}
-//	
-//	vector  vX1 = mWks.Columns(0);
-//   /* Worksheet wksGrpah;
-//    wksGrpah.Create("origin");
-//    Dataset ds1(wksGrpah,0);
-//    ds1.Append(vX1);*/
-//    
-//    
-//    // 3. Prepare the 2nd table and show values got from vectors
-//    tr.Report.Table2.ID = nID++;
-//    tr.Report.Table2.SetAttribute(STR_LABEL_ATTRIB, "Peaks"); //Table tile
-//    tr.Report.Table2.SetAttribute(TREE_Table, nTableFormat | GETNBRANCH_TRANSPOSE); 
-//    
-//    tr.Report.Table2.C1.ID = nID++;
-//    tr.Report.Table2.C1.SetAttribute(STR_LABEL_ATTRIB, "Independent variable"); // Column label
-//    // Put data from vector to table columns
-//    tr.Report.Table2.C1.dVals = vX1; 
-//    
-//    for(int i = -1; i <= getReplicas(); ++i)
-//    {
-//		vector      vFitY(vX1.GetSize());
-//		if( 0 == mFitSession.GetYFromX(vX1, vFitY, vFitY.GetSize(), i) )
-//		{
-//			out_str("Fail to get Y values");
-//			return false;
-//		}   
-//    
-//		string name = "Peak";
-//		if(i == -1)
-//			name = "Cumulative Fit Peak";
-//		else
-//			name += (i + 1);
-//		TreeNode peakNode = tr.Report.Table2.AddNode(name, nID++);
-//		//peakNode.SetAttribute(STR_LABEL_ATTRIB, name); // Column label  
-//		peakNode.dVals = vFitY;   
-//		/*wksGrpah.AddCol();  
-//		Dataset ds(wksGrpah,i+2); 
-//		ds.Append(vFitY);*/
-//    }  
-//   /* GraphPage gp;
-//    gp.Create("origin");
-//    GraphLayer gl(gp.GetName(), 0);
-//    gl.AddPlot(wksGrpah);
-//    
-//    for(int plot = 0; plot < gl.DataPlots.Count(); ++plot)
-//    {
-//        DataPlot dp = gl.DataPlots(plot); 
-//        dp.SetColor(plot);
-//    }*/
-//    
-//     
-//    ///////////////////////////////////////////////////////////////////////
-//    // 4. Put graph page inside report table
-//    GraphPage gp;
-//    gp.Create();
-//    tr.Report.Table3.ID = nID++;    
-//    tr.Report.Table3.SetAttribute(STR_LABEL_ATTRIB, "Graphs"); //Table tile
-//    tr.Report.Table3.SetAttribute(TREE_Table, nTableFormat | GETNBRANCH_TRANSPOSE); 
-//    
-//    tr.Report.Table3.C1.ID = nID++;
-//    tr.Report.Table3.C1.strVal = gp.GetUID(true);
-//    tr.Report.Table3.C1.SetAttribute(STR_LABEL_ATTRIB, "Graph1");
-//    tr.Report.Table3.C1.SetAttribute(TREE_Control, ONODETYPE_EMBED_GRAPH);
-//    
-//    /*GraphLayer gl(gp.GetName(), 0);
-//    gl.AddPlot(wksGrpah);
-//    
-//    for(int plot = 0; plot < gl.DataPlots.Count(); ++plot)
-//    {
-//        DataPlot dp = gl.DataPlots(plot); 
-//        dp.SetColor(plot);
-//    }*/
-//    // 5. Prepare worksheet window to report
-//    WorksheetPage wksPage;
-//    wksPage.Create();   
-//    
-//    DWORD   dwOptions = WP_SHEET_HIERARCHY | CREATE_NO_DEFAULT_TEMPLATE;        
-//    string  strSheetName = "Report Sheet";
-//    int nn = wksPage.AddLayer(strSheetName, dwOptions);
-//    if( nn < 0 )    
-//        return false; 
-//    
-//    Worksheet wksOut = wksPage.Layers(nn);
-//    wksPage.Layers(0).Delete(); //delete the first default layer    
-//    
-//    
-//    // 6. Do report
-//    if( wksOut.SetReportTree(tr.Report) < 0 ) // Returns last row number on successful exit and -1 on failure.
-//    {
-//        printf("Fail to set report tree.\n");
-//        return false;
-//    }       
-//    wksOut.AutoSize();  
-//    
-//    return true;
-//}
 
 bool NLMultiFitSettings::buildPeaks(vector<int> dataIds)
 {
@@ -1101,6 +904,30 @@ bool NLMultiFitSettings::buildPeaks(vector<int> dataIds)
 	return true;
 }
 	
+void NLMultiFitSettings::updateSessionFunctionIfNeeded()
+{
+	if(mNeedFunctionUpdate)
+		updateSessionFunction();
+}
+
+void NLMultiFitSettings::updateSessionParametrsIfNeeded()
+{
+	if(mNeedParametrsUpdate)
+		updateSessionParametrs();
+}
+
+void NLMultiFitSettings::updateParameterNamesIfNeeded()
+{
+	if(mNeedNamesUpdate)
+		updateParameterNames();
+}
+
+void NLMultiFitSettings::updateBoundsIfNeeded()
+{
+	if(mNeedBoundsUpdate)
+		updateBounds();
+}
+
 void NLMultiFitSettings::updateSession()
 {
 	updateSessionFunction();
@@ -1119,11 +946,12 @@ void NLMultiFitSettings::updateSessionFunction()
 	}
 	
 	// 1. Set fucntion
-	if(!mFitSession.SetFunction(getFunction(), NULL/*getCategory()*/,getReplicas() + 1)) // set function, category name can be ignore
+	if(!mFitSession.SetFunction(getFunction(), getCategory(),getReplicas() + 1)) // set function, category name can be ignore
 	{
 		printf("invalid fit function");
 		return;// error_report("invalid fit function");
 	}
+	mNeedFunctionUpdate = false;
 	
   //  FitSession.SetIterationSettings(nMaxNumIterations);
   
@@ -1136,7 +964,7 @@ void NLMultiFitSettings::updateSessionParametrs()
 		printf("No Active Layer");
 	    return;
 	}
-	
+	int g = getReplicas();
 	mParametrs.mValuesNumber = isReplicaAllowed() ? mFunctionSettings.mDublicateOffset - 1 + mFunctionSettings.mDublicateUnit * (getReplicas() + 1)
 	                                              : mFunctionSettings.mNumberOfParams;
 	                                              
@@ -1161,8 +989,10 @@ void NLMultiFitSettings::updateSessionParametrs()
 		//2 set the dataset
 		vector  vX1, vY1;
 		drInputData.GetData( dwRules, nDataIndex, NULL, NULL, &vY1, &vX1 );    
-		mFitSession.SetSrcDataRange(drInputData); 
+		//mFitSession.SetSrcDataRange(drInputData); 
 		
+        if(mReverse)
+        	reverseVector(vY1);
 		if(!mFitSession.SetData(vY1, vX1, NULL, nDataIndex, nNumData))  
 		{
 			printf("err setting data");
@@ -1196,7 +1026,110 @@ void NLMultiFitSettings::updateSessionParametrs()
 				unit = 0;
 		}
 	}
-	setFunctionParametrs();
+	
+	mNeedParametrsUpdate = false;
+}
+
+void NLMultiFitSettings::updateParameterNames()
+{
+	if(mFunctionSettings.mNumberOfParams == 0)
+		return;
+	vector<string> paramNames;
+	
+	mParametrs.mUnitNumbers.RemoveAll();
+	mParametrs.mNames.RemoveAll();
+	mParametrs.mMeanings.RemoveAll();
+	
+	
+	int paramNumWithReplica = isReplicaAllowed() ? mFunctionSettings.mDublicateOffset - 1 + mFunctionSettings.mDublicateUnit * (getReplicas() + 1)
+	                                              : mFunctionSettings.mNumberOfParams;
+	mParametrs.mNames.SetSize(paramNumWithReplica);
+	mParametrs.mUnitNumbers.SetSize(paramNumWithReplica); // set the number of parameters units. For example, y0 - 0, xc -1, w - 1, A - 1, xc__1 - 2, w__1 - 2, A__1 - 2
+	{
+		int unit = 1, unit_num = mFunctionSettings.mDublicateUnit;
+		for(int i = 0; i < mParametrs.mUnitNumbers.GetSize(); ++i)
+		{
+			if(i < mFunctionSettings.mDublicateOffset - 1 || getReplicas() == 0)
+				mParametrs.mUnitNumbers[i] = 0;
+			else
+			{
+				mParametrs.mUnitNumbers[i] = unit;
+				if(--unit_num == 0)
+				{
+					++unit;
+					unit_num = mFunctionSettings.mDublicateUnit;
+				}
+			}
+		}
+	}
+	for(int i = 0; i < mFunctionSettings.mNumberOfParams; ++i) // set the names and values of params without replicas
+	{
+		mParametrs.mNames[i] = mFunctionSettings.mFuncNames[i];
+	}
+	// set names and values for params of replicas
+	if(isReplicaAllowed())
+	{
+		int unit = 1;	
+		int nameIndex = mFunctionSettings.mDublicateOffset - 1;
+		//																														                      y,xc,w,A y0 xc0 w0 A0
+		int unitIndex = mFunctionSettings.mNumberOfParams +  mFunctionSettings.mDublicateOffset - 1; // begin index for replica params              0, 1,2,3,4, 5,  6,  7
+		int endUnitIndex = unitIndex + mFunctionSettings.mDublicateUnit - 1; // end index for replica params  y and y0 are the same and they are not inside dublicate unit.5 - begUnitIndex, 7 - endUnitIndex.
+		for(i = mFunctionSettings.mNumberOfParams; i < paramNumWithReplica; ++i)
+		{
+				string paramName;
+				paramName.Format("%s__%d", mFunctionSettings.mFuncNames[nameIndex++], unit);
+				mParametrs.mNames[i] = paramName;
+				
+				if(unitIndex++ == endUnitIndex)
+				{
+					nameIndex = mFunctionSettings.mDublicateOffset - 1;
+					++unit;
+					unitIndex = mFunctionSettings.mNumberOfParams * unit + mFunctionSettings.mDublicateOffset - 1;
+					endUnitIndex = unitIndex + mFunctionSettings.mDublicateUnit - 1;
+				}
+		}
+	}
+	mNeedNamesUpdate = false;
+}
+
+void NLMultiFitSettings::updateBounds()
+{
+	mParametrs.mLowerBounds.RemoveAll();
+	mParametrs.mLowerLimitControl.RemoveAll();
+	mParametrs.mUpperBounds.RemoveAll();
+	mParametrs.mUpperLimitControl.RemoveAll(); 
+	
+	vector<bool>   ExclusiveLower;
+	vector<bool>   OnLowerBounds;	
+	vector<bool>   ExclusiveUpper;
+	vector<bool>   OnUpperBounds;
+	mFitSession.GetParamNumericValues(mParametrs.mLowerBounds, PARMAS_SETTING_LOWERBOUNDS);
+	mFitSession.GetParamNumericValues(ExclusiveLower, PARMAS_SETTING_LOWERBOUNDSEXCLUSIVE);
+	mFitSession.GetParamNumericValues(OnLowerBounds, PARMAS_SETTING_LOWERBOUNDSENABLE);	
+	
+	mParametrs.mLowerLimitControl.SetSize(mParametrs.mLowerBounds.GetSize());
+	for(int ii =0; ii < mParametrs.mLowerBounds.GetSize(); ++ii)
+	{
+		int control = OnLowerBounds[ii] ? (ExclusiveLower[ii] ? LIMIT_EXCLUSIVELESS : LIMIT_LESS): LIMIT_OFF;
+		mParametrs.mLowerLimitControl[ii] = control;
+		
+		/*printf("lowerBounds[%d] ->  %f \n ", ii, mParametrs.mLowerBounds[ii]); 
+		printf("mLowerLimitControl[%d] ->  %d \n ", ii,mParametrs.mLowerLimitControl[ii]); */
+	}
+	
+	mFitSession.GetParamNumericValues(mParametrs.mUpperBounds, PARMAS_SETTING_UPPERBOUNDS);
+	mFitSession.GetParamNumericValues(ExclusiveUpper, PARMAS_SETTING_UPPERBOUNDSEXCLUSIVE);
+	mFitSession.GetParamNumericValues(OnUpperBounds, PARMAS_SETTING_UPPERBOUNDSENABLE);	
+	
+	mParametrs.mUpperLimitControl.SetSize(mParametrs.mUpperBounds.GetSize());
+	for(ii =0; ii < mParametrs.mUpperBounds.GetSize(); ++ii)
+	{
+		int control = OnUpperBounds[ii] ? (ExclusiveUpper[ii] ? LIMIT_EXCLUSIVELESS : LIMIT_LESS): LIMIT_OFF;
+		mParametrs.mUpperLimitControl[ii] = control;
+		/*printf("upperBounds[%d] ->  %f \n ", ii, mParametrs.mUpperBounds[ii]); 
+		printf("mUpperLimitControl[%d] ->  %d \n ", ii,mParametrs.mUpperLimitControl[ii]); */
+	}
+	mNeedBoundsUpdate = false;
 }
 
 void NLMultiFitSettings::setFunctionParametrs()
@@ -1342,7 +1275,7 @@ bool NLMultiFitSettings::setFixed(int index, int dataIndex, bool fixed)
 }
 
 
-bool NLMultiFitSettings::appendFitResults(Worksheet& wks, const FitParameter* pParams, int numOfParams, const RegStats& fitStats, const NLSFFitInfo& fitInfo, string statWithError)
+bool NLMultiFitSettings::appendFitResults(Worksheet& wks, const int columnNum, const FitParameter* pParams, const int numOfParams, const RegStats& fitStats, const NLSFFitInfo& fitInfo, const string statWithError)
 {
 	/*if(numOfParams != mParametrs.mNames.GetSize())
 		return error_report("err. number of parameters of initialization and results are different.");*/
@@ -1354,18 +1287,22 @@ bool NLMultiFitSettings::appendFitResults(Worksheet& wks, const FitParameter* pP
 	if(nR1 < 0)
 	{
 		int n = getCheckedAddParamCount();
-		int nTotalCols = mParametrs.mNames.GetSize() + getCheckedAddParamCount();
+		int nTotalCols = mParametrs.mNames.GetSize() + getCheckedAddParamCount() + 1; // +1 - adding the X column
 		if(wks.GetNumCols() < nTotalCols)
 		{
 			wks.SetSize(0, nTotalCols);	
 			vector<unsigned int> paramIndexes;
 			getCheckedAddIndexes(paramIndexes);
 			
+			// first (x) column, from comments row of original worksheet
+			Column column = wks.Columns(0);
+			column.SetLongName("X");
+				
 			int nCol = 0;
 			int index = 0;
-			while(nCol < nTotalCols)
+			while(nCol < nTotalCols - 1)
 			{
-				Column column = wks.Columns(nCol);
+				Column column = wks.Columns(nCol + 1);
 				if(nCol < mParametrs.mNames.GetSize())
 				{
 					column.SetLongName(mParametrs.mNames[nCol]);
@@ -1384,10 +1321,13 @@ bool NLMultiFitSettings::appendFitResults(Worksheet& wks, const FitParameter* pP
 	}
 	nR1++; 
 	//fit parameters
-	int index = 0;
-	for(; index < mParametrs.mNames.GetSize(); index++)
+	
+	wks.SetCell(nR1, 0, mWks.Columns(columnNum).GetComments());
+			
+	int index = 1;
+	for(int paramN = 0; paramN < mParametrs.mNames.GetSize(); paramN++)
 	{
-		wks.SetCell(nR1, index, pParams[index].Value);
+		wks.SetCell(nR1, index++, pParams[paramN].Value);
 	}
 	int checkIndex = 0;
 	// additional params from fit information and fit statistics

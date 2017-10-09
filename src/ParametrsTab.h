@@ -2,12 +2,12 @@
 
 #include <Origin.h>
 ////////////////////////////////////////////////////////////////////////////////////
-#include <..\Originlab\DialogEx.h>
+#include <..\OriginLab\DialogEx.h>
 #include <Dialog.h>
-#include <..\system\MsgMap.h>
+#include <MsgMap.h>
 #include "MultiNLFitDialogRes.h"
-#include <..\FittingProject\src\resource.h>
-#include <..\FittingProject\src\NLMultiFitSettings.h>
+#include "resource.h"
+#include "NLMultiFitSettings.h"
 
     
 class ParametersList : public GridListControl
@@ -44,6 +44,12 @@ public:
 	}
 	
 	
+	BOOL OnInitPage();
+	BOOL OnActivatePage();
+    void OnBeforeEditColList(Control flxControl, long nRow, long nCol, BOOL* pCancel);
+	void OnAfterEditColList(Control flxControl,int nRow,int nCol);
+	void OnCellChecked(Control flxControl);
+	void OnListDataChecnged(Control flxControl);
 	// Event handlers for PrametersTab page
 	EVENTS_BEGIN
 		PAGE_ON_INIT(OnInitPage)
@@ -55,12 +61,6 @@ public:
 	//	ON_BN_CLICKED(IDC_FITBUTTON, OnFitButtonClicked);
 	EVENTS_END
 	
-	BOOL OnInitPage();
-	BOOL OnActivatePage();
-    void OnBeforeEditColList(Control flxControl, long nRow, long nCol, BOOL* pCancel);
-	void OnAfterEditColList(Control flxControl,int nRow,int nCol);
-	void OnCellChecked(Control flxControl);
-	void OnListDataChecnged(Control flxControl);
 	    
 private:
 	NLMultiFitSettings* mSettings;

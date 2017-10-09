@@ -35,6 +35,7 @@
 BOOL MultiNLFitDlg::OnInitDialog()
 {
 	mSaveCheckBox = GetItem(IDC_SAVESETTINGSCHECK);
+	mReverseCheckBox = GetItem(IDC_CHECKREVERSE);
 	mEditFirst = GetItem(IDC_EDITFIRST);
 	mEditLast = GetItem(IDC_EDITLAST);
 	m_PlaceHolder.Create(IDC_TAB_PLACEHOLDER, *this);
@@ -42,6 +43,7 @@ BOOL MultiNLFitDlg::OnInitDialog()
 	m_PlaceHolder.InitMaps();
 	
 	mSaveCheckBox.Check = mSettings->isSave();
+	mReverseCheckBox.Check = mSettings->getReverse();
 	return TRUE;
 }
 
@@ -51,18 +53,32 @@ BOOL MultiNLFitDlg::OnClose()
 	return TRUE;
 }
 
-BOOL MultiNLFitDlg::OnCancelClosed(Control ctrl)
-{
-	OnClose();
-	Close();
-	return TRUE;
-}
-
 BOOL MultiNLFitDlg::OnClickBuildFirstGraph(Control ctrl)
 {
 	mCurrentPeak = 1;
 	mSettings->buildPeak(mCurrentPeak);
 	return true;
+}
+
+BOOL MultiNLFitDlg::OnSystemCommand(int nCmd)
+{
+	if( SC_MINIMIZE == nCmd)
+	{
+		BOOL bClose = !IsRolledup();
+			Enable = bClose;
+		if(bClose)
+		{
+			if ( OM_RETURN_NOT_PRESENT == OptionalMessageStatus("NLFitMinimizeToModalless") )
+				OptionalMessage("ClickMinimizeToRollDown", MB_OK);
+			bool res = Rollup(bClose);
+			ShowWindow(SW_HIDE);
+			
+			return FALSE;
+		}
+		else
+			ShowWindow(SW_NORMAL);
+	}
+	return TRUE;
 }
 
 BOOL MultiNLFitDlg::OnClickBuildNextGraph(Control ctrl)
@@ -88,12 +104,22 @@ BOOL MultiNLFitDlg::OnFitButtonClicked(Control ctrl)
 	return true;
 }
 
+BOOL MultiNLFitDlg::OnClickSetReverse(Control ctrl)
+{
+	mSettings->setReverse(mReverseCheckBox.Check);
+	return true;
+}
+
 BOOL MultiNLFitDlg::OnClickSetSave(Control ctrl)
 {
 	mSettings->saveSettings(mSaveCheckBox.Check);
 	return true;
 }
 
+void MultiNLFitDlg::OnActivate(UINT nState, HWND hwndOther, BOOL bMinimized)
+{
+}
+	
 bool DoMultiNLFitDlg() 
 {
 	Worksheet wks = Project.ActiveLayer();
@@ -104,8 +130,8 @@ bool DoMultiNLFitDlg()
 	}
 	else
 	{
-		MultiNLFitDlg myDlg;
-		myDlg.DoModal( GetWindow() );
+		static MultiNLFitDlg myDlg;
+		myDlg.Create(GetWindow()/*, DLG_HIDDEN| DLG_OPTIONS_SHIFT_SHOW_DEFAULT_TRUE | DLG_OPTIONS_USE_OPS */);
 	}
 	return true;
 }
@@ -214,6 +240,7 @@ void Datasheet_SetReportTree_Ex2()
     wksOut.AutoSize();  
 }
 
+/*
 void Datasheet_SetReportTree()
 {
 	string strGraphName = "Graph1";
@@ -260,4 +287,4 @@ void Datasheet_SetReportTree()
 	}		
 	wksPage.Rename("ReportSample");
 	wksOut.AutoSize();	
-}
+}*/

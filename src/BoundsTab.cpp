@@ -1,6 +1,6 @@
 
 #include <Origin.h>
-#include <..\FittingProject\src\BoundsTab.h>
+#include "BoundsTab.h"
 
 enum {
 	 COL_NO   = 0,
@@ -206,6 +206,8 @@ BOOL BoundsTab::OnInitPage()
 
 BOOL BoundsTab::OnActivatePage()
 {
+	mSettings->updateParameterNamesIfNeeded();
+	mSettings->updateBoundsIfNeeded();
 	m_ColList.refresh();
 	return TRUE;		
 }

@@ -96,16 +96,25 @@ class NLMultiFitSettings
 {
 public:
 	NLMultiFitSettings(Worksheet wks);
-//	NLMultiFitSettings(const NLMultiFitSettings& settings);
 
 	bool beforeFitting(); // set params befor fitting
 	bool fitAll();
 	bool fit(Worksheet& wks, int columnNum, int &nFitOutcome);
 	bool buildPeaks(vector<int> dataIds);
 	bool buildPeak(int dataId);
-
-	bool fit();
 	void buildGraph();
+	
+	void setReverse(bool reverse)
+	{
+		if(mReverse != reverse)
+		{
+			mReverse = reverse;
+			mNeedParametrsUpdate = true;
+			mNeedBoundsUpdate = true;
+		}
+	}
+	
+	bool getReverse() { return mReverse; }
 	
 	/*general setting methods*/
 	string getFunction();
@@ -177,14 +186,27 @@ public:
 	
 	bool loadSettings();
 	bool saveSettings();
+	int  activeWorksheetPage()
+	{
+		return mWks.GetPage().SetShow();
+	}
+	
+	WorksheetPage getWorksheetPage() { return mWks.GetPage(); }
 	
 	void updateSession(); // updates all session parametrs 
+	void updateSessionFunctionIfNeeded();
+	void updateSessionParametrsIfNeeded();
+	void updateParameterNamesIfNeeded();
+	void updateBoundsIfNeeded();
 private:
 	void loadFunctionParameters();
 	void updateSessionFunction();
 	void updateSessionParametrs();
+	void updateParameterNames();
+	void updateBounds();
+	
 	void setFunctionParametrs();	
-	bool appendFitResults(Worksheet& wks, const FitParameter* pParams, int numOfParams, const RegStats& fitStats, const NLSFFitInfo& fitInfo, string statWithError);
+	bool appendFitResults(Worksheet& wks, const int columnNum, const FitParameter* pParams, const int numOfParams, const RegStats& fitStats, const NLSFFitInfo& fitInfo, const string statWithError);
 private:
 	AdditionalParameters mAdditionalParameters;
 	GeneralSetttings     mGeneralSettings;
@@ -192,9 +214,15 @@ private:
 	FunctionSettings     mFunctionSettings;
 	
 	bool           mSaveSettings;
+	bool mNeedParametrsUpdate;
+	bool mNeedNamesUpdate;
+	bool mNeedBoundsUpdate;
+	bool mNeedFunctionUpdate;
+	bool mReverse;
 	
 	NLFitSession    mFitSession;
 	Worksheet mWks;
+	
 };
 
 #endif // NLMULTIFITSETTINGS

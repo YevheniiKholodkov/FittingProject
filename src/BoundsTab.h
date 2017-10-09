@@ -2,10 +2,10 @@
 #define BOUNDSTAB
 #include <Dialog.h>
 #include <..\Originlab\DialogEx.h>
-#include <..\system\MsgMap.h>
+#include <MsgMap.h>
 #include "MultiNLFitDialogRes.h"
-#include <..\FittingProject\src\resource.h>
-#include <..\FittingProject\src\NLMultiFitSettings.h>
+#include "resource.h"
+#include "NLMultiFitSettings.h"
 
 class BoundsList : public GridListControl
 {

@@ -1,11 +1,11 @@
 #ifndef FUNCTIONSELECTIONTAB
 #define FUNCTIONSELECTIONTAB
 #include <Dialog.h>
-#include <..\FittingProject\src\NLSFIniPraser.h>
-#include <..\system\MsgMap.h>
+#include "NLSFIniPraser.h"
+#include <MsgMap.h>
 #include "MultiNLFitDialogRes.h"
-#include <..\FittingProject\src\resource.h>
-#include <..\FittingProject\src\NLMultiFitSettings.h>
+#include "resource.h"
+#include "NLMultiFitSettings.h"
 
 class FunctionSelectionTab : public PropertyPage
 {

@@ -1,5 +1,5 @@
 #include <Origin.h>
-#include <..\FittingProject\src\ParametrsTab.h>
+#include "ParametrsTab.h"
 
 enum {
 	 COL_NO   = 0,
@@ -186,6 +186,8 @@ BOOL ParametersTab::OnInitPage()
 
 BOOL ParametersTab::OnActivatePage()
 {
+	mSettings->updateSessionParametrsIfNeeded();
+	mSettings->updateParameterNamesIfNeeded();
 	m_ColList.refresh();
 	return TRUE;		
 }
